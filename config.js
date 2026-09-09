@@ -3,6 +3,6 @@
    Leave them empty and the app still works, just on this device only. */
 
 window.PRISMA_CONFIG = {
-  url: '',   // Project URL, e.g. https://abcdefgh.supabase.co
-  key: ''    // the anon public key, the long string starting with eyJ
+  url: 'https://lffryzrctndzdwdevbfi.supabase.co/rest/v1/'   
+  key: 'sb_publishable_4SjJ1SdNRkA6faluHV1aMQ_OZSWSqmQ'    // the anon public key, the long sring starting with eyJ
 };
