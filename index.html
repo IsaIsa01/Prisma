@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Prisma — daily math</title>
+<meta name="theme-color" content="#17091F">
+<meta name="description" content="Fifteen math problems a day, one subject per day, with spaced review and a shared leaderboard.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prisma">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --ground:#17091F; --ink:#F1E8FA; --dim:#A392B8; --faint:#6F5F85;
+  --rule:rgba(241,232,250,.13); --rule2:rgba(241,232,250,.28);
+  --lilac:#C9A6FF; --cyan:#6FE3F5; --rose:#FF7A9C; --mint:#7DF5C4; --plum:#7C3AED;
+  --ui:'Bricolage Grotesque',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --pad:clamp(18px,4vw,40px);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--ui);
+  font-size:16px;line-height:1.5;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
+
+/* printed ink washes — flat, static, grained */
+#wash{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#wash i{position:absolute;display:block;border-radius:52% 48% 60% 40%/45% 55% 45% 55%;mix-blend-mode:screen;opacity:.5}
+.w1{width:78vmax;height:70vmax;left:-26vmax;top:-30vmax;background:radial-gradient(closest-side,#5B21B6 0%,rgba(91,33,182,.45) 55%,transparent 78%)}
+.w2{width:62vmax;height:58vmax;right:-20vmax;top:8vmax;background:radial-gradient(closest-side,#A21CAF 0%,rgba(162,28,175,.35) 58%,transparent 80%);opacity:.42}
+.w3{width:56vmax;height:50vmax;left:8vmax;bottom:-24vmax;background:radial-gradient(closest-side,#0E7490 0%,rgba(14,116,144,.32) 55%,transparent 78%);opacity:.4}
+#grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.19;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* background figures */
+#ghosts{position:fixed;inset:0;z-index:2;pointer-events:none}
+.ghost{position:absolute;right:3vw;top:50%;transform:translateY(-50%);opacity:0;transition:opacity 1.8s ease;text-align:right}
+.ghost.on{opacity:.13}
+.ghost svg{width:min(21vw,200px);height:auto;margin-left:auto;display:block}
+.ghost .nm{font-size:clamp(17px,2.6vw,30px);font-weight:500;letter-spacing:-.02em;margin-top:8px}
+.ghost .yr{font-size:11px;color:var(--ink);opacity:.7;margin-top:1px}
+.ghost .fx{margin-top:8px;font-size:clamp(12px,1.5vw,17px)}
+@media(max-width:820px){.ghost{right:auto;left:50%;transform:translate(-50%,-50%);text-align:center}.ghost svg{margin:0 auto}.ghost.on{opacity:.08}}
+
+.stage{position:relative;z-index:3}
+button{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+
+/* ---------- opening ---------- */
+#open{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:56px var(--pad) 96px;gap:22px}
+.word{font-size:clamp(46px,13vw,124px);font-weight:800;letter-spacing:-.055em;line-height:.88;margin:0}
+.sub{max-width:38ch;color:var(--dim);font-size:15px;line-height:1.7;margin:0}
+.orb{position:relative;width:min(64vw,268px);aspect-ratio:1;border-radius:50%;border:0;padding:0;cursor:pointer;margin:10px 0 4px;
+  background:
+    radial-gradient(circle at 31% 25%,rgba(255,255,255,.95),rgba(255,255,255,.18) 15%,transparent 36%),
+    radial-gradient(circle at 74% 80%,rgba(255,255,255,.55),transparent 24%),
+    conic-gradient(from 205deg,#FF7AC8,#8B5CF6,#6FE3F5,#A7F3D0,#C9A6FF,#FF9BE1,#FF7AC8);
+  box-shadow:0 22px 70px rgba(124,58,237,.42),inset 0 0 66px rgba(255,255,255,.34),inset -16px -20px 54px rgba(23,9,31,.5);
+  transition:transform .55s cubic-bezier(.22,1,.36,1),box-shadow .55s ease}
+.orb::after{content:'';position:absolute;inset:7%;border-radius:50%;border:1px solid rgba(255,255,255,.32)}
+.orb b{position:relative;z-index:2;font-weight:600;font-size:clamp(17px,4vw,23px);letter-spacing:-.01em;color:#1B0A2A}
+.orb:hover,.orb:focus-visible{transform:scale(1.14);box-shadow:0 30px 100px rgba(124,58,237,.62),0 0 120px rgba(111,227,245,.24),inset 0 0 80px rgba(255,255,255,.45),inset -16px -20px 54px rgba(23,9,31,.45)}
+.orb:active{transform:scale(1.06)}
+@media(prefers-reduced-motion:no-preference){.orb{animation:bob 8s ease-in-out infinite}}
+@keyframes bob{0%,100%{translate:0 -8px}50%{translate:0 8px}}
+.quiet{background:none;border:0;color:var(--dim);text-decoration:underline;text-underline-offset:4px;cursor:pointer;font-size:14px;padding:6px}
+
+/* ---------- app ---------- */
+#app{display:none;max-width:880px;margin:0 auto;padding:22px var(--pad) 96px}
+#app.on{display:block}
+.top{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--rule)}
+.mark{background:none;border:0;padding:0;font-weight:800;letter-spacing:-.04em;font-size:21px;cursor:pointer}
+.facts{margin-left:auto;display:flex;gap:18px;align-items:baseline;font-size:13px;color:var(--dim);flex-wrap:wrap}
+.facts b{color:var(--ink);font-weight:700;font-size:15px}
+.facts .goal{display:inline-flex;align-items:center;gap:7px}
+.meter{width:64px;height:3px;background:var(--rule2);position:relative;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--lilac)}
+.facts button{background:none;border:0;color:var(--faint);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:12px}
+
+nav{display:flex;gap:26px;padding:14px 0 0;border-bottom:1px solid var(--rule);margin-bottom:26px;overflow-x:auto}
+nav button{background:none;border:0;padding:0 0 12px;cursor:pointer;color:var(--faint);font-size:14.5px;font-weight:500;
+  border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--lilac)}
+nav .tag{color:var(--lilac);font-weight:700;margin-left:5px}
+
+/* day rail */
+.rail{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:26px;background:var(--rule)}
+.rail button{background:var(--ground);border:0;padding:11px 9px 12px;cursor:pointer;text-align:left;color:var(--faint);font-size:11.5px;line-height:1.3}
+.rail button .n{display:block;font-size:12.5px;font-weight:500;margin-bottom:9px;letter-spacing:-.01em}
+.rail button .g{display:block;height:2px;background:var(--rule2)}
+.rail button .g i{display:block;height:100%;background:var(--faint)}
+.rail button[aria-current="true"]{color:var(--ink)}
+.rail button[aria-current="true"] .g i{background:var(--lilac)}
+.rail button.full .g i{background:var(--mint)}
+.rail button[disabled]{opacity:.34;cursor:not-allowed}
+@media(max-width:640px){.rail{grid-template-columns:repeat(4,1fr)}}
+
+.pips{display:flex;gap:3px;margin-bottom:34px}
+.pips i{flex:1;height:2px;background:var(--rule2)}
+.pips i.done{background:var(--mint)}
+.pips i.miss{background:var(--rose)}
+.pips i.now{background:var(--lilac);height:4px;margin-top:-1px}
+
+.head{display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;color:var(--faint);font-size:12.5px;margin-bottom:20px}
+.head .subj{color:var(--lilac);font-weight:500}
+.head .count{margin-left:auto}
+.dots{display:inline-flex;gap:3px;vertical-align:middle}
+.dots i{width:4px;height:4px;border-radius:50%;background:var(--rule2)}
+.dots i.on{background:var(--lilac)}
+
+.qz{font-size:clamp(23px,5.4vw,40px);line-height:1.42;letter-spacing:-.01em;margin:0 0 34px;overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
+.answer{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;max-width:520px}
+.answer input{flex:1;min-width:150px;background:transparent;border:0;border-bottom:1.5px solid var(--rule2);
+  padding:8px 2px 10px;color:var(--ink);font-size:24px;font-family:KaTeX_Main,Georgia,serif}
+.answer input::placeholder{color:var(--faint);font-size:15px;font-family:var(--ui)}
+.answer input:focus{outline:none;border-bottom-color:var(--lilac)}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--ground);padding:11px 24px;cursor:pointer;font-weight:600;font-size:14px;border-radius:0}
+.btn.line{background:transparent;color:var(--ink);font-weight:500}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.verdict{margin-top:20px;font-size:15.5px;min-height:22px;max-width:60ch}
+.verdict.ok{color:var(--mint)} .verdict.no{color:var(--rose)}
+.helpwrap{margin-top:40px;padding-top:20px;border-top:1px solid var(--rule);max-width:66ch}
+.helpwrap .cost{font-size:12.5px;color:var(--faint);margin-bottom:14px}
+.step{padding:0 0 0 18px;border-left:2px solid var(--rule2);margin:0 0 18px;font-size:15px;line-height:1.72;color:var(--dim)}
+.step b{display:block;color:var(--ink);font-weight:600;font-size:13px;margin-bottom:3px}
+.step.full{border-left-color:var(--lilac);color:var(--ink)}
+@media(prefers-reduced-motion:no-preference){.step{animation:in .28s ease}}
+@keyframes in{from{opacity:0}to{opacity:1}}
+
+h2{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:36px 0 16px}
+.bars{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.bars div{display:grid;grid-template-columns:1fr 132px 42px;gap:14px;align-items:center;padding:9px 0;border-bottom:1px solid var(--rule);font-size:14px}
+.bars .b{height:3px;background:var(--rule2)}
+.bars .b i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--lilac))}
+.bars .v{color:var(--faint);font-size:12.5px;text-align:right}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:26px;padding:6px 0 12px;border-bottom:1px solid var(--rule)}
+.figs .n{font-size:33px;font-weight:700;letter-spacing:-.035em;line-height:1}
+.figs .l{font-size:12px;color:var(--faint);margin-top:5px;line-height:1.35}
+.awards{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:0 26px}
+.aw{padding:12px 0;border-bottom:1px solid var(--rule);opacity:.36}
+.aw.got{opacity:1}
+.aw .t{font-size:14px;font-weight:600}
+.aw.got .t{color:var(--lilac)}
+.aw .d{font-size:12px;color:var(--faint);line-height:1.45;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{text-align:left;font-weight:500;font-size:11.5px;color:var(--faint);padding:0 0 9px;border-bottom:1px solid var(--rule2)}
+td{padding:13px 0;border-bottom:1px solid var(--rule)}
+td:first-child{width:34px;color:var(--faint)}
+tr.me td{color:var(--lilac)}
+.note{font-size:13px;color:var(--faint);line-height:1.7;margin:18px 0 0;max-width:62ch}
+.empty{font-size:19px;font-weight:500;margin:34px 0 10px;letter-spacing:-.02em}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chips button{background:transparent;border:1px solid var(--rule2);padding:7px 15px;cursor:pointer;font-size:13px;color:var(--dim)}
+.chips button[aria-pressed="true"]{border-color:var(--lilac);color:var(--ink)}
+
+/* ticker */
+#ticker{position:fixed;left:0;right:0;bottom:0;z-index:5;height:38px;display:flex;align-items:center;
+  background:rgba(23,9,31,.92);border-top:1px solid var(--rule);overflow:hidden;white-space:nowrap;
+  padding-bottom:env(safe-area-inset-bottom)}
+#ticker .run{display:inline-block;padding-left:100%;font-size:12.5px;color:var(--faint)}
+#ticker .run em{font-style:normal;color:var(--dim)}
+#ticker .run s{text-decoration:none;color:var(--lilac);margin:0 22px;opacity:.6}
+@media(prefers-reduced-motion:no-preference){#ticker .run{animation:roll 150s linear infinite}}
+@keyframes roll{to{transform:translateX(-100%)}}
+
+/* dialog */
+.veil{position:fixed;inset:0;z-index:20;background:rgba(12,4,18,.82);display:flex;align-items:center;justify-content:center;padding:22px}
+.ask{max-width:380px;width:100%;background:var(--ground);border:1px solid var(--rule2);padding:28px}
+.ask h3{font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
+.ask p{font-size:13.5px;color:var(--dim);line-height:1.65;margin:0 0 18px}
+.ask input{width:100%;background:transparent;border:0;border-bottom:1.5px solid var(--rule2);padding:8px 2px;color:var(--ink);font-size:20px;margin-bottom:20px;font-family:inherit}
+.ask input:focus{outline:none;border-bottom-color:var(--lilac)}
+</style>
+</head>
+<body>
+<div id="wash"><i class="w1"></i><i class="w2"></i><i class="w3"></i></div>
+<div id="grain"></div>
+<div id="ghosts"></div>
+
+<div class="stage">
+<section id="open">
+  <h1 class="word">Prisma</h1>
+  <p class="sub">Fifteen problems a day, a different branch of mathematics each day, getting harder as you go. Everything you get wrong comes back later, spaced out, until it sticks.</p>
+  <button class="orb" id="begin"><b>Let's begin</b></button>
+  <p class="sub" id="todayLine"></p>
+  <button class="quiet" id="place">Take the two-minute placement check</button>
+</section>
+
+<section id="app">
+  <div class="top">
+    <button class="mark" id="mark">Prisma</button>
+    <div class="facts">
+      <span>Level <b id="fLevel">1</b></span>
+      <span><b id="fXp">0</b> pts</span>
+      <span class="goal" title="today against your daily goal"><span id="fToday">0</span>/<span id="fGoal">150</span><span class="meter"><i id="fMeter" style="width:0"></i></span></span>
+      <span><b id="fStreak">0</b>-day streak</span>
+      <span id="fName"></span><button id="rename">rename</button>
+    </div>
+  </div>
+
+  <nav role="tablist">
+    <button role="tab" data-v="play" aria-selected="true">Today</button>
+    <button role="tab" data-v="review" aria-selected="false">Review<span class="tag" id="qCount"></span></button>
+    <button role="tab" data-v="progress" aria-selected="false">Progress</button>
+    <button role="tab" data-v="board" aria-selected="false">Board</button>
+  </nav>
+
+  <div id="v-play">
+    <div class="rail" id="rail"></div>
+    <div class="pips" id="pips"></div>
+    <div id="qbox"></div>
+  </div>
+
+  <div id="v-review" hidden><div id="rbox"></div></div>
+
+  <div id="v-progress" hidden>
+    <div class="figs" id="figs"></div>
+    <h2>Daily goal</h2>
+    <div class="chips" id="goals"></div>
+    <h2>Where you stand by subject</h2>
+    <div class="bars" id="mastery"></div>
+    <h2>Achievements</h2>
+    <div class="awards" id="awards"></div>
+    <p class="note" id="weekNote"></p>
+  </div>
+
+  <div id="v-board" hidden>
+    <h2>Standings</h2>
+    <table><thead><tr><th></th><th>Player</th><th>Points</th><th>Solved</th><th>Level</th></tr></thead><tbody id="board"></tbody></table>
+    <p class="note">Everyone gets the same 105 problems each week, so the ranking is a fair comparison. Review problems are yours alone and score at 60%.</p>
+  </div>
+</section>
+</div>
+
+<div id="ticker"><div class="run" id="run"></div></div>
+
+<template id="tpl-q">
+  <div class="head"><span class="subj"></span><span class="dots"></span><span class="pts"></span><span class="count"></span></div>
+  <div class="qz"></div>
+  <div class="answer">
+    <input autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+    <button class="btn check">Check</button>
+    <button class="btn line next" hidden>Next</button>
+  </div>
+  <div class="verdict"></div>
+  <div class="helpwrap">
+    <div class="cost"></div>
+    <button class="btn line hint">Show me how it works</button>
+    <div class="steps"></div>
+  </div>
+</template>
+
+<script>
+/* ===== Deterministic problem generators — themed by weekday ===== */
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const RI=(r,a,b)=>a+Math.floor(r()*(b-a+1));
+const PK=(r,arr)=>arr[Math.floor(r()*arr.length)];
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){const t=b;b=a%b;a=t}return a||1}
+function lcm(a,b){return a/gcd(a,b)*b}
+function fr(n,d){const g=gcd(n,d);n/=g;d/=g;if(d<0){n=-n;d=-d}return[n,d]}
+function frStr(n,d){return d===1?String(n):n+'/'+d}
+function r4(x){return Math.round(x*10000)/10000}
+function r1(x){return Math.round(x*10)/10}
+function r2(x){return Math.round(x*100)/100}
+function nf(n){return n<0?'('+n+')':String(n)}
+function sgn(n){return n<0?'- '+Math.abs(n):'+ '+n}
+function NZ(r,a,b){let v=0;while(v===0)v=RI(r,a,b);return v}
+function fact(n){let f=1;for(let i=2;i<=n;i++)f*=i;return f}
+function nCr(n,k){return Math.round(fact(n)/(fact(k)*fact(n-k)))}
+function sum(a){return a.reduce((x,y)=>x+y,0)}
+
+function texToPlain(s){
+  return s
+    .replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g,'$1/$2')
+    .replace(/\\sqrt\{([^{}]*)\}/g,'√($1)')
+    .replace(/\\text\{([^{}]*)\}/g,'$1')
+    .replace(/\\\\/g,' ').replace(/\\;/g,' ').replace(/\\,/g,' ').replace(/\\quad/g,'  ')
+    .replace(/\\times/g,'×').replace(/\\div/g,'÷').replace(/\\cdot/g,'·')
+    .replace(/\\pi/g,'π').replace(/\\circ/g,'°').replace(/\\%/g,'%')
+    .replace(/\\le/g,'≤').replace(/\\ge/g,'≥').replace(/\\pm/g,'±')
+    .replace(/\^\{?(\d)\}?/g,(m,d)=>['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'][d])
+    .replace(/[{}$]/g,'').replace(/\s+/g,' ').trim();
+}
+
+const FRAC_TOL=0.0015, PI_TOL=0.06;
+
+/* ================= DAY 1 — NUMBER & FRACTIONS ================= */
+
+function gOrderOps(r,d){
+  let tex,val,first;
+  if(d<=1){const a=RI(r,2,14),b=RI(r,2,9),c=RI(r,2,9);tex=`${a} + ${b} \\times ${c}`;val=a+b*c;first=`${b} × ${c} = ${b*c}`;}
+  else if(d===2){const a=RI(r,2,12),b=RI(r,2,12),c=RI(r,2,9),e=RI(r,2,9);tex=`(${a} + ${b}) \\times ${c} - ${e}`;val=(a+b)*c-e;first=`${a} + ${b} = ${a+b}`;}
+  else if(d===3){const c=RI(r,2,9),q=RI(r,2,9),b=c*q,a=RI(r,3,15),e=RI(r,2,9);tex=`${a} \\times ${e} - ${b} \\div ${c}`;val=a*e-b/c;first=`${a} × ${e} = ${a*e}, and ${b} ÷ ${c} = ${b/c}`;}
+  else if(d===4){const a=RI(r,2,9),b=RI(r,2,6),c=RI(r,2,9),e=RI(r,2,14);tex=`${a} + ${b}^2 \\times ${c} - ${e}`;val=a+b*b*c-e;first=`${b}² = ${b*b}`;}
+  else {const a=RI(r,2,9),b=RI(r,2,9),c=RI(r,2,6),q=RI(r,2,7),n=c*q;tex=`(${a} + ${b})^2 - ${n} \\div ${c}`;val=(a+b)*(a+b)-n/c;first=`the bracket is ${a+b}, so its square is ${(a+b)*(a+b)}`;}
+  return {topic:'Order of operations',tex,answer:String(val),value:val,
+    hints:['Nothing here runs left to right. Brackets first, then powers, then × and ÷, and additions last.',
+      'Start with this piece: '+first+'. Rewrite the whole line with that part replaced and keep going.',
+      'Following the priority list to the end gives '+val+'.'],
+    solution:`Brackets → powers → × and ÷ → + and −. ${first}. Finishing the remaining operations gives ${val}.`};
+}
+function gSimplify(r,d){
+  const g=RI(r,2,[4,6,9,12,18][d-1]);
+  let x=RI(r,2,9),y=RI(r,2,11);
+  while(x===y||gcd(x,y)!==1){x=RI(r,2,9);y=RI(r,2,11);}
+  const n=g*x,den=g*y;
+  return {topic:'Simplifying fractions',tex:`\\text{Reduce } \\frac{${n}}{${den}} \\text{ to lowest terms}`,
+    answer:frStr(x,y),value:x/y,format:'fraction',
+    hints:['A fraction is in lowest terms when nothing divides both parts. Hunt for the biggest number dividing '+n+' and '+den+'.',
+      `The greatest common divisor is ${g}. Divide top and bottom by it.`,
+      `${n} ÷ ${g} = ${x} and ${den} ÷ ${g} = ${y}, so the answer is ${frStr(x,y)}.`],
+    solution:`gcd(${n}, ${den}) = ${g}. Dividing both parts by ${g} gives ${frStr(x,y)}.`};
+}
+function gFracAddSub(r,d){
+  const cap=[6,8,10,12,15][d-1];
+  let b=RI(r,2,cap),e=RI(r,2,cap); if(b===e)e=b+1;
+  let a=RI(r,1,b-1),c=RI(r,1,e-1);
+  const sub=r()<0.5; const den=lcm(b,e); let n,op;
+  if(sub){ if(a/b<c/e){[a,b,c,e]=[c,e,a,b];} n=a*(den/b)-c*(den/e); op='-'; }
+  else { n=a*(den/b)+c*(den/e); op='+'; }
+  const [rn,rd]=fr(n,den), g=gcd(n,den);
+  return {topic:'Adding fractions',tex:`\\frac{${a}}{${b}} ${op} \\frac{${c}}{${e}} = \\;?`,
+    answer:frStr(rn,rd),value:rn/rd,format:'fraction',
+    hints:['Fractions combine only when the denominators match. Find the least common multiple of '+b+' and '+e+'.',
+      `Common denominator ${den}: ${a}/${b} = ${a*(den/b)}/${den} and ${c}/${e} = ${c*(den/e)}/${den}. Now touch only the numerators.`,
+      `${a*(den/b)}/${den} ${op} ${c*(den/e)}/${den} = ${n}/${den}${g>1?', which reduces to '+frStr(rn,rd):' — already lowest terms'}.`],
+    solution:`Common denominator ${den}. Rewrite both, combine numerators to get ${n}/${den}${g>1?', then divide both parts by '+g+' → '+frStr(rn,rd):'.'}`};
+}
+function gFracMulDiv(r,d){
+  const cap=[6,8,9,11,13][d-1];
+  const b=RI(r,2,cap),e=RI(r,2,cap),a=RI(r,1,b+2),c=RI(r,1,e+2);
+  const div=r()<0.5;
+  const n=div?a*e:a*c, den=div?b*c:b*e, g=gcd(n,den), [rn,rd]=fr(n,den);
+  return {topic:div?'Dividing fractions':'Multiplying fractions',
+    tex:`\\frac{${a}}{${b}} ${div?'\\div':'\\times'} \\frac{${c}}{${e}} = \\;?`,
+    answer:frStr(rn,rd),value:rn/rd,format:'fraction',
+    hints:[div?'Dividing by a fraction is multiplying by it upside down. No common denominator needed.':'Multiplying needs no common denominator: top × top, bottom × bottom.',
+      div?`Flip the divisor: ${c}/${e} → ${e}/${c}. The task is now ${a}/${b} × ${e}/${c}.`:`Top: ${a} × ${c}. Bottom: ${b} × ${e}. Reduce afterwards.`,
+      `That is ${n}/${den}${g>1?', and dividing by '+g+' leaves '+frStr(rn,rd):', already reduced'}.`],
+    solution:`${div?'Invert and multiply. ':''}Top ${n}, bottom ${den}${g>1?', reduce by '+g:''} → ${frStr(rn,rd)}.`};
+}
+function gConvert(r,d){
+  const dens=[[2,4,5,10],[4,5,8,10,20],[8,16,20,25,40],[16,25,32,40,50],[16,32,50,64,80,125]][d-1];
+  const den=PK(r,dens); let n=RI(r,1,den-1);
+  const [sn,sd]=fr(n,den), dec=r4(n/den), pct=r4(n/den*100);
+  const mode=PK(r,d<=2?['dec','pct']:['dec','pct','frac','frac']);
+  if(mode==='frac')return {topic:'Percents as fractions',tex:`\\text{Write } ${pct}\\% \\text{ as a fraction in lowest terms}`,
+    answer:frStr(sn,sd),value:sn/sd,format:'fraction',
+    hints:['Percent means "per hundred" — the fraction is already there, with 100 underneath.',
+      `Write ${pct}/100${pct%1?', scale both parts by 10 to clear the decimal,':''} then cancel the common factor.`,
+      `It reduces to ${frStr(sn,sd)}.`],
+    solution:`${pct}% = ${pct}/100 → ${frStr(sn,sd)} after cancelling.`};
+  const val=mode==='dec'?dec:pct;
+  return {topic:'Fractions, decimals and percents',
+    tex:`\\text{Write } \\frac{${sn}}{${sd}} \\text{ as a ${mode==='dec'?'decimal':'percent'}}`,
+    answer:String(val),value:val,unit:mode==='pct'?'%':'',
+    hints:[`A fraction bar is a division sign: ${sn}/${sd} means ${sn} ÷ ${sd}.`,
+      mode==='dec'?`Do the division, or scale the fraction to denominator 100: ${sd} × ${r4(100/sd)} = 100.`:`Divide to get ${dec}, then remember percent is hundredths — multiply by 100.`,
+      mode==='dec'?`${sn} ÷ ${sd} = ${dec}.`:`${dec} × 100 = ${pct}%.`],
+    solution:mode==='dec'?`${sn} ÷ ${sd} = ${dec}.`:`${sn} ÷ ${sd} = ${dec}, ×100 → ${pct}%.`};
+}
+function gGcdLcm(r,d){
+  const useLcm=r()<0.5, cap=[6,9,12,16,20][d-1], g=RI(r,2,cap);
+  let x=RI(r,2,10),y=RI(r,2,12);
+  while(gcd(x,y)!==1||x===y){x=RI(r,2,10);y=RI(r,2,12);}
+  const A=g*x,B=g*y,L=lcm(A,B);
+  return {topic:useLcm?'Least common multiple':'Greatest common divisor',
+    tex:`\\text{Find the ${useLcm?'least common multiple':'greatest common divisor'} of ${A} and ${B}}`,
+    answer:String(useLcm?L:g),value:useLcm?L:g,
+    hints:[useLcm?'The lcm is the smallest number both divide into. Prime factors are the reliable route.':'You want the largest number dividing both with no remainder.',
+      useLcm?`Once you have gcd(${A}, ${B}) = ${g}, the lcm is free: multiply the two and divide by the gcd.`:`Euclid's trick: replace the bigger number by the remainder of dividing it by the smaller, repeat. Start with ${Math.max(A,B)} ÷ ${Math.min(A,B)}.`,
+      useLcm?`${A} × ${B} ÷ ${g} = ${L}.`:`The chain ends at ${g}.`],
+    solution:useLcm?`gcd = ${g}, so lcm = ${A}×${B}/${g} = ${L}.`:`The Euclidean algorithm on ${A} and ${B} terminates at ${g}.`};
+}
+function gNegatives(r,d){
+  const a=RI(r,-12,-2),b=RI(r,2,12),c=RI(r,-9,-2);
+  let tex,val,first;
+  if(d<=2){tex=`${a} + ${b} - ${nf(c)}`;val=a+b-c;first=`subtracting ${c} is the same as adding ${-c}`;}
+  else if(d===3){tex=`${nf(a)} \\times ${nf(c)} + ${b}`;val=a*c+b;first=`two negatives multiplied give a positive: ${a} × ${c} = ${a*c}`;}
+  else {const q=RI(r,2,6);tex=`\\frac{${a*q}}{${a}} - ${nf(c)} \\times ${b}`;val=q-c*b;first=`${a*q} ÷ ${a} = ${q}, and ${c} × ${b} = ${c*b}`;}
+  return {topic:'Negative numbers',tex,answer:String(val),value:val,
+    hints:['Signs first, size second. Two like signs multiplied or divided give a plus; two unlike give a minus. Subtracting a negative flips it into an addition.',
+      'Concretely: '+first+'. Rewrite the line with that fixed and the rest is ordinary arithmetic.',
+      'The value is '+val+'.'],
+    solution:`${first}. Finishing the arithmetic gives ${val}.`};
+}
+function gPowers(r,d){
+  if(d<=2){const b=RI(r,2,7),e=RI(r,2,d===1?3:4);
+    return {topic:'Powers',tex:`${b}^${e} = \\;?`,answer:String(Math.pow(b,e)),value:Math.pow(b,e),
+      hints:['A power counts repeated multiplication, not multiplication by the exponent.',`${b}^${e} means ${Array(e).fill(b).join(' × ')}.`,`That equals ${Math.pow(b,e)}.`],
+      solution:`${b}^${e} = ${Array(e).fill(b).join(' × ')} = ${Math.pow(b,e)}.`};}
+  if(d===3){const b=RI(r,2,12),v=b*b;
+    return {topic:'Roots',tex:`\\sqrt{${v}} = \\;?`,answer:String(b),value:b,
+      hints:['A square root asks: what number multiplied by itself lands here?','Run through squares — '+ (b-1)+'² = '+(b-1)*(b-1)+' is too small, so try the next one.',`${b} × ${b} = ${v}, so the root is ${b}.`],
+      solution:`${b}² = ${v}, so √${v} = ${b}.`};}
+  const b=RI(r,2,5),p=RI(r,4,7),q=RI(r,2,3),val=Math.pow(b,p-q);
+  return {topic:'Laws of exponents',tex:`\\frac{${b}^{${p}}}{${b}^{${q}}} = \\;?`,answer:String(val),value:val,
+    hints:['Same base on top and bottom means you never have to compute either power in full.','Dividing powers of the same base subtracts the exponents: '+p+' − '+q+'.',`${b}^${p-q} = ${val}.`],
+    solution:`${b}^${p}/${b}^${q} = ${b}^(${p}−${q}) = ${b}^${p-q} = ${val}.`};
+}
+function gPrimes(r,d){
+  const ps=[2,3,5,7,11,13];
+  const a=PK(r,ps),b=PK(r,ps),c=d>=4?PK(r,ps):1;
+  const n=a*b*c;
+  const ask=d>=3&&r()<0.5?'divisors':'largest';
+  const facs={};[a,b,c].forEach(x=>{if(x>1)facs[x]=(facs[x]||0)+1});
+  const ndiv=Object.values(facs).reduce((s,e)=>s*(e+1),1);
+  const big=Math.max(a,b,c);
+  const fs=Object.entries(facs).map(([p,e])=>p+(e>1?'^'+e:'')).join(' × ');
+  return {topic:'Prime factors',
+    tex:ask==='divisors'?`\\text{How many divisors does ${n} have?}`:`\\text{What is the largest prime factor of ${n}?}`,
+    answer:String(ask==='divisors'?ndiv:big),value:ask==='divisors'?ndiv:big,
+    hints:['Break the number into primes first — almost every question about factors becomes easy afterwards.',
+      `${n} = ${fs}. ${ask==='divisors'?'Every divisor picks each prime some number of times, from zero up to its exponent.':'Now just read off the biggest prime in that list.'}`,
+      ask==='divisors'?`Multiply (exponent + 1) for each prime: ${Object.values(facs).map(e=>e+1).join(' × ')} = ${ndiv}.`:`The largest is ${big}.`],
+    solution:`${n} = ${fs}. ${ask==='divisors'?'Number of divisors = '+Object.values(facs).map(e=>e+1).join(' × ')+' = '+ndiv:'Largest prime factor = '+big}.`};
+}
+
+/* ================= DAY 2 — PERCENT, RATIO, PROPORTION ================= */
+
+function gPercentOf(r,d){
+  const p=d<=2?PK(r,[5,10,20,25,50,75]):RI(r,3,96);
+  const base=(100/gcd(p,100))*RI(r,2,d<=2?30:14), val=r4(base*p/100);
+  return {topic:'Percent of a number',tex:`${p}\\% \\text{ of } ${base} = \\;?`,answer:String(val),value:val,
+    hints:['A percent is hundredths: '+p+' out of every 100.',`So compute ${base} × ${p} ÷ 100. Doing ${base} ÷ 100 = ${r4(base/100)} first keeps it small.`,`${r4(base/100)} × ${p} = ${val}.`],
+    solution:`${p}% = ${p}/100, so ${base} × ${p}/100 = ${val}.`};
+}
+function gPercentChange(r,d){
+  const p=d<=3?PK(r,[10,20,25,40,50]):PK(r,[8,12,15,35,60,80]);
+  const up=r()<0.5, base=(100/gcd(p,100))*RI(r,2,[14,14,10,8,6][d-1]);
+  const after=up?base*(100+p)/100:base*(100-p)/100;
+  const ctx=PK(r,[['A monthly subscription','costs'],['A used bike','is listed at'],['A flight ticket','costs'],['A laptop','is priced at']]);
+  return {topic:'Percent change',
+    tex:`\\text{${ctx[0]} ${ctx[1]} ${base}, then ${up?'rises':'falls'} to ${after}.}\\\\ \\text{By what percent did it change?}`,
+    answer:String(p),value:p,unit:'%',
+    hints:['Percent change is always measured against the starting value, never the new one. Here that is '+base+'.',
+      `Difference first: |${after} − ${base}| = ${Math.abs(after-base)}. Then ask what share that is of ${base}.`,
+      `${Math.abs(after-base)} ÷ ${base} = ${r4(Math.abs(after-base)/base)}, times 100 → ${p}%.`],
+    solution:`Change ${Math.abs(after-base)} over the original ${base} = ${r4(Math.abs(after-base)/base)} → ${p}%.`};
+}
+function gReversePercent(r,d){
+  const p=PK(r,[10,20,25,40,50]),orig=RI(r,3,30)*20,after=r2(orig*(100-p)/100);
+  return {topic:'Reverse percent',tex:`\\text{After a ${p}\\% discount an item costs ${after}.}\\\\ \\text{What was the original price?}`,
+    answer:String(orig),value:orig,
+    hints:['The price you see is what remains after the cut, not the whole.',`If ${p}% came off, ${after} represents ${100-p}% of the original. Get back to 100%.`,`${after} ÷ ${(100-p)/100} = ${orig}.`],
+    solution:`${after} is ${100-p}% of the original, so original = ${after} ÷ ${(100-p)/100} = ${orig}.`};
+}
+function gRatio(r,d){
+  const a=RI(r,1,d+2),b=RI(r,1,d+3),three=d>=4&&r()<0.5,c=three?RI(r,1,d+2):0;
+  const parts=a+b+c,unit=RI(r,3,20),total=parts*unit,big=Math.max(a,b,c)*unit;
+  return {topic:'Ratios',tex:`\\text{Split ${total} in the ratio ${a}:${b}${three?':'+c:''}.}\\\\ \\text{How big is the largest share?}`,
+    answer:String(big),value:big,
+    hints:['A ratio counts equal parts. Work out how many parts the whole is cut into first.',
+      `${a} + ${b}${three?' + '+c:''} = ${parts} parts, so one part is ${total} ÷ ${parts} = ${unit}.`,
+      `The biggest ratio number is ${Math.max(a,b,c)}, so ${Math.max(a,b,c)} × ${unit} = ${big}.`],
+    solution:`One part = ${total}/${parts} = ${unit}; largest share = ${Math.max(a,b,c)} × ${unit} = ${big}.`};
+}
+function gProportion(r,d){
+  const k=RI(r,2,d+3),a=RI(r,2,9),b=a*k,c=RI(r,2,12),x=c*k;
+  return {topic:'Proportion',tex:`\\frac{${a}}{${b}} = \\frac{${c}}{x} \\quad \\text{find } x`,answer:String(x),value:x,
+    hints:['Two equal fractions mean one side is a clean scaling of the other. Look for the multiplier that connects them.',
+      `${a} → ${c} is a multiplication by ${r4(c/a)}. Whatever you do to the top you do to the bottom.`,
+      `${b} × ${r4(c/a)} = ${x}. Cross-multiplying gives the same thing: ${a}x = ${b*c}.`],
+    solution:`Cross-multiply: ${a}x = ${b}×${c} = ${b*c}, so x = ${x}.`};
+}
+function gUnitRate(r,d){
+  const per=RI(r,2,d+4),qty=RI(r,3,12),price=per*qty,newQ=RI(r,3,20),val=per*newQ;
+  const item=PK(r,['notebooks','coffees','tickets','batteries','tiles']);
+  return {topic:'Unit rate',tex:`\\text{${qty} ${item} cost ${price}.}\\\\ \\text{What do ${newQ} cost at the same rate?}`,
+    answer:String(val),value:val,
+    hints:['Get the price of one first — that single number unlocks any quantity.',`${price} ÷ ${qty} = ${per} each.`,`${per} × ${newQ} = ${val}.`],
+    solution:`Unit price ${price}/${qty} = ${per}; ${newQ} × ${per} = ${val}.`};
+}
+function gPercentWord(r,d){
+  const kind=PK(r,['tip','tax','interest','commission']),p=PK(r,[5,8,10,12,15,20,25]),base=RI(r,4,40)*25,total=r2(base*(100+p)/100);
+  const txt={tip:[`A dinner bill is ${base} and you add a ${p}\\% tip.`,'What is the total?'],
+    tax:[`A product costs ${base} before ${p}\\% tax.`,'What is the price with tax?'],
+    interest:[`You deposit ${base} at ${p}\\% simple interest for a year.`,'What is the balance after one year?'],
+    commission:[`A sale of ${base} carries ${p}\\% commission on top.`,'What does the buyer pay in total?']}[kind];
+  return {topic:'Percent in context',tex:`\\text{${txt[0]}}\\\\ \\text{${txt[1]}}`,answer:String(total),value:total,
+    hints:['You want the total, not the extra piece alone. Either find the extra and add it, or scale the original in one step.',
+      `Extra = ${p}% of ${base} = ${r2(base*p/100)}. Or multiply ${base} by ${(100+p)/100} directly.`,`${base} + ${r2(base*p/100)} = ${total}.`],
+    solution:`${p}% of ${base} = ${r2(base*p/100)}; total ${total}.`};
+}
+function gCompound(r,d){
+  const p=PK(r,[5,10,20,25]),n=RI(r,2,3),base=RI(r,2,10)*100;
+  const val=r2(base*Math.pow(1+p/100,n));
+  return {topic:'Compound growth',tex:`\\text{${base} grows by ${p}\\% each year for ${n} years.}\\\\ \\text{What is it worth at the end? (2 dp)}`,
+    answer:String(val),value:val,tol:0.02,
+    hints:['Compound means each year grows the amount the previous year left behind, so you cannot just multiply the first year\'s increase by '+n+'.',
+      `Growing by ${p}% means multiplying by ${1+p/100}. Do that ${n} times over — that is ${1+p/100}^${n}.`,
+      `${base} × ${r4(Math.pow(1+p/100,n))} = ${val}.`],
+    solution:`${base} × ${1+p/100}^${n} = ${base} × ${r4(Math.pow(1+p/100,n))} = ${val}.`};
+}
+function gSuccessive(r,d){
+  const a=PK(r,[10,20,25,50]),b=PK(r,[10,20,25,50]),base=RI(r,2,12)*100;
+  const val=r2(base*(1+a/100)*(1-b/100));
+  return {topic:'Successive changes',tex:`\\text{A price of ${base} rises ${a}\\%, then falls ${b}\\%.}\\\\ \\text{What is the final price? (2 dp)}`,
+    answer:String(val),value:val,tol:0.02,
+    hints:['The two percents are taken from different bases, so they never simply cancel. Handle them one after the other.',
+      `First step: ${base} × ${1+a/100} = ${r2(base*(1+a/100))}. The second cut is taken from that, not from ${base}.`,
+      `${r2(base*(1+a/100))} × ${1-b/100} = ${val}.`],
+    solution:`${base} × ${1+a/100} × ${1-b/100} = ${val}. The order does not matter, but the base for the second change does.`};
+}
+
+/* ================= DAY 3 — ALGEBRA ================= */
+
+function gLinear(r,d){
+  if(d<=2){const a=RI(r,2,9),x=NZ(r,-8,12),b=NZ(r,-12,15),c=a*x+b;
+    return {topic:'Linear equations',tex:`\\text{Solve } ${a}x ${sgn(b)} = ${c}`,answer:String(x),value:x,
+      hints:['Peel it like an onion: undo whatever sits furthest from x first, doing the same to both sides.',
+        `Move the ${b<0?'−':'+'}${Math.abs(b)} across: that leaves ${a}x = ${a*x}.`,`x = ${a*x} ÷ ${a} = ${x}.`],
+      solution:`${b<0?'Add':'Subtract'} ${Math.abs(b)} both sides → ${a}x = ${a*x}; divide by ${a} → x = ${x}.`};}
+  const a=RI(r,3,9);let c=RI(r,2,9);if(c===a)c=a+RI(r,1,4);
+  const x=NZ(r,-9,12),b=NZ(r,-10,14),e=(a-c)*x+b;
+  return {topic:'Linear equations',tex:`\\text{Solve } ${a}x ${sgn(b)} = ${c}x ${sgn(e)}`,answer:String(x),value:x,
+    hints:['x lives on both sides, so job one is gathering x terms on one side and plain numbers on the other.',
+      `Subtract ${c}x from both sides: ${a-c}x ${sgn(b)} = ${e}. Then move the number across.`,`${a-c}x = ${(a-c)*x}, so x = ${x}.`],
+    solution:`Collect: ${a-c}x = ${(a-c)*x}; divide by ${a-c} → x = ${x}.`};
+}
+function gExpand(r,d){
+  const a=RI(r,2,7),b=NZ(r,-8,9),c=RI(r,2,6),e=NZ(r,-7,9),xv=RI(r,2,5);
+  if(d<=3){const val=a*(c*xv+e); // a(cx+e) at x=xv
+    return {topic:'Expanding brackets',tex:`\\text{Expand } ${a}(${c}x ${sgn(e)}) \\text{ and evaluate at } x = ${xv}`,
+      answer:String(val),value:val,
+      hints:['The multiplier outside reaches every term inside, not just the first one.',
+        `${a}(${c}x ${sgn(e)}) = ${a*c}x ${sgn(a*e)}. Now substitute x = ${xv}.`,
+        `${a*c} × ${xv} ${sgn(a*e)} = ${val}.`],
+      solution:`${a}(${c}x ${sgn(e)}) = ${a*c}x ${sgn(a*e)}; at x = ${xv} that is ${val}.`};}
+  const val=(xv+b)*(xv+e);
+  return {topic:'Expanding brackets',tex:`\\text{Expand } (x ${sgn(b)})(x ${sgn(e)}) \\text{ and evaluate at } x = ${xv}`,
+    answer:String(val),value:val,
+    hints:['Every term in the first bracket meets every term in the second — four products, then collect.',
+      `(x ${sgn(b)})(x ${sgn(e)}) = x² ${sgn(b+e)}x ${sgn(b*e)}. Substitute x = ${xv} into that.`,
+      `${xv*xv} ${sgn((b+e)*xv)} ${sgn(b*e)} = ${val}.`],
+    solution:`The expansion is x² ${sgn(b+e)}x ${sgn(b*e)}; at x = ${xv} it equals ${val}. Faster check: (${xv}${sgn(b)})(${xv}${sgn(e)}) = ${val}.`};
+}
+function gEvaluate(r,d){
+  const a=RI(r,2,6),b=NZ(r,-9,9),c=NZ(r,-9,9),x=NZ(r,-5,6);
+  const val=a*x*x+b*x+c;
+  return {topic:'Evaluating expressions',tex:`\\text{If } x = ${nf(x)}, \\text{ find } ${a}x^2 ${sgn(b)}x ${sgn(c)}`,
+    answer:String(val),value:val,
+    hints:['Substitute with brackets around the value — that is what keeps the sign of the squared term honest.',
+      `x² = ${nf(x)}² = ${x*x}, so the first term is ${a} × ${x*x} = ${a*x*x}.`,
+      `${a*x*x} ${sgn(b*x)} ${sgn(c)} = ${val}.`],
+    solution:`(${x})² = ${x*x}. ${a}·${x*x} = ${a*x*x}, ${b}·${x} = ${b*x}, plus ${c} → ${val}.`};
+}
+function gFactor(r,d){
+  const p=RI(r,1,9);let q=RI(r,1,9);if(q===p)q=p+1+RI(r,0,3);
+  const s=r()<0.5?1:-1,rt1=p*s,rt2=-q*s;
+  const b=-(rt1+rt2),c=rt1*rt2;
+  const big=Math.max(rt1,rt2);
+  return {topic:'Factorising',tex:`\\text{Factorise } x^2 ${sgn(b)}x ${sgn(c)} \\text{ — give the larger root}`,
+    answer:String(big),value:big,
+    hints:['You are looking for two numbers that multiply to the constant term and add to the x coefficient.',
+      `Need a pair with product ${c} and sum ${b}. Test factor pairs of ${Math.abs(c)}, watching the signs.`,
+      `The pair is ${-rt1} and ${-rt2}, so it factorises as (x ${sgn(-rt1)})(x ${sgn(-rt2)}) and the roots are ${rt1} and ${rt2}.`],
+    solution:`x² ${sgn(b)}x ${sgn(c)} = (x ${sgn(-rt1)})(x ${sgn(-rt2)}). Roots ${Math.min(rt1,rt2)} and ${big}; the larger is ${big}.`};
+}
+function gSimultaneous(r,d){
+  const x=RI(r,-6,8),y=RI(r,-6,8),a=RI(r,1,5),b=RI(r,1,5),c=RI(r,1,5);let e=RI(r,1,5);
+  if(a*e===b*c)e=e+1;
+  const p=a*x+b*y,q=c*x+e*y;
+  const ask=r()<0.5;
+  return {topic:'Simultaneous equations',tex:`${a}x + ${b}y = ${p} \\\\ ${c}x + ${e}y = ${q} \\\\ \\text{Find } ${ask?'x':'y'}`,
+    answer:String(ask?x:y),value:ask?x:y,
+    hints:['Two unknowns need two equations, and the way through is to kill one variable off.',
+      `Multiply the first by ${c} and the second by ${a} — both now carry ${a*c}x, so subtracting removes x entirely.`,
+      `That leaves y = ${y}, and substituting back gives x = ${x}.`],
+    solution:`Eliminating x gives y = ${y}; substituting into ${a}x + ${b}y = ${p} gives x = ${x}. Answer: ${ask?x:y}.`};
+}
+function gInequality(r,d){
+  const a=RI(r,2,7),b=NZ(r,-9,9),k=RI(r,-4,8),c=a*k+b;
+  return {topic:'Inequalities',tex:`\\text{Solve } ${a}x ${sgn(b)} > ${c} \\text{ — give the smallest integer } x \\text{ that works}`,
+    answer:String(k+1),value:k+1,
+    hints:['Solve it exactly as you would an equation; only dividing by a negative would force you to flip the sign, and here you are not.',
+      `${a}x > ${c - b}, so x > ${k}.`,`x must beat ${k} without touching it, so the smallest whole number is ${k+1}.`],
+    solution:`${a}x > ${c-b} → x > ${k}. Strict inequality, so the smallest integer solution is ${k+1}.`};
+}
+function gQuadratic(r,d){
+  const p=RI(r,1,7);let q=RI(r,1,7);if(q===p)q=p===7?p-1:p+1;
+  const a=RI(r,1,d>=5?3:1);
+  const b=-a*(p+q),c=a*p*q;
+  return {topic:'Quadratic equations',tex:`\\text{Solve } ${a===1?'':a}x^2 ${sgn(b)}x ${sgn(c)} = 0 \\text{ — give the larger root}`,
+    answer:String(Math.max(p,q)),value:Math.max(p,q),
+    hints:['The roots are hiding in the coefficients: their sum is −b/a and their product is c/a.',
+      `Sum of roots = ${p+q}, product = ${p*q}. Find two numbers fitting both — or factorise ${a===1?'':a}x² ${sgn(b)}x ${sgn(c)} directly.`,
+      `The roots are ${p} and ${q}; the larger is ${Math.max(p,q)}.`],
+    solution:`It factorises to ${a===1?'':a}(x − ${p})(x − ${q}) = 0, so x = ${p} or ${q}. Larger: ${Math.max(p,q)}.`};
+}
+function gRearrange(r,d){
+  const a=RI(r,2,6),b=RI(r,2,9),y=RI(r,3,20),x=r4((y-b)/a);
+  const xv=RI(r,2,9),yv=a*xv+b;
+  return {topic:'Rearranging formulas',tex:`\\text{If } y = ${a}x + ${b}, \\text{ find } x \\text{ when } y = ${yv}`,
+    answer:String(xv),value:xv,
+    hints:['Either rearrange first and then substitute, or substitute first and then solve — both land in the same place.',
+      `Rearranged: x = (y − ${b})/${a}. Now put y = ${yv} in.`,`(${yv} − ${b})/${a} = ${xv}.`],
+    solution:`x = (y − ${b})/${a} = (${yv} − ${b})/${a} = ${xv}.`};
+}
+
+/* ================= DAY 4 — GEOMETRY ================= */
+
+function gRectTri(r,d){
+  const w=RI(r,3,d*5+5),h=RI(r,3,d*5+5),tri=r()<0.5;
+  const val=tri?r1(w*h/2):w*h;
+  return {topic:tri?'Area of a triangle':'Area of a rectangle',
+    tex:tri?`\\text{A triangle has base ${w} and height ${h}. Find its area.}`:`\\text{A rectangle measures ${w} by ${h}. Find its area.}`,
+    answer:String(val),value:val,
+    hints:[tri?'A triangle is exactly half of the rectangle that boxes it in.':'Area of a rectangle is the two side lengths multiplied.',
+      tri?`So compute ${w} × ${h} = ${w*h}, then halve it.`:`${w} × ${h}.`,`That gives ${val}.`],
+    solution:tri?`½ × ${w} × ${h} = ${val}.`:`${w} × ${h} = ${val}.`};
+}
+function gPerimeter(r,d){
+  const w=RI(r,3,20),h=RI(r,3,20),area=w*h;
+  return {topic:'Perimeter and area',tex:`\\text{A rectangle has area ${area} and one side ${w}.}\\\\ \\text{Find its perimeter.}`,
+    answer:String(2*(w+h)),value:2*(w+h),
+    hints:['You cannot get the perimeter without the missing side, so find that first.',`${area} ÷ ${w} = ${h}, the other side.`,`Perimeter = 2 × (${w} + ${h}) = ${2*(w+h)}.`],
+    solution:`Other side = ${area}/${w} = ${h}. Perimeter = 2(${w} + ${h}) = ${2*(w+h)}.`};
+}
+function gCircle(r,d){
+  const rad=RI(r,2,d+8),area=r()<0.5;
+  const val=r1(area?Math.PI*rad*rad:2*Math.PI*rad);
+  return {topic:'Circles',tex:`\\text{A circle has radius ${rad}. Find its ${area?'area':'circumference'}. (1 dp)}`,
+    answer:String(val),value:val,tol:PI_TOL,
+    hints:[area?'Area of a circle is π times the radius squared — square the radius, do not double it.':'Circumference is π times the diameter, and the diameter is twice the radius.',
+      area?`${rad}² = ${rad*rad}, so the area is ${rad*rad}π.`:`Diameter = ${2*rad}, so the circumference is ${2*rad}π.`,
+      `Using π ≈ 3.14159 that is ${val}.`],
+    solution:area?`πr² = π × ${rad*rad} = ${val}.`:`2πr = π × ${2*rad} = ${val}.`};
+}
+function gPythagoras(r,d){
+  const trips=[[3,4,5],[6,8,10],[5,12,13],[8,15,17],[9,12,15],[7,24,25],[20,21,29]];
+  const [a,b,c]=PK(r,trips.slice(0,Math.min(trips.length,d+2)));
+  const findHyp=d<=3||r()<0.5;
+  return {topic:'Pythagoras',
+    tex:findHyp?`\\text{A right triangle has legs ${a} and ${b}. Find the hypotenuse.}`
+               :`\\text{A right triangle has hypotenuse ${c} and one leg ${a}. Find the other leg.}`,
+    answer:String(findHyp?c:b),value:findHyp?c:b,
+    hints:['In a right triangle the squares on the two legs add up to the square on the hypotenuse.',
+      findHyp?`${a}² + ${b}² = ${a*a} + ${b*b} = ${c*c}. Now undo the square.`:`The hypotenuse square is ${c*c}; subtract the known leg square ${a*a} to isolate the other.`,
+      `√${findHyp?c*c:b*b} = ${findHyp?c:b}.`],
+    solution:findHyp?`${a}² + ${b}² = ${c*c}, so the hypotenuse is ${c}.`:`${c*c} − ${a*a} = ${b*b}, so the leg is ${b}.`};
+}
+function gAngles(r,d){
+  if(d<=2){const a=RI(r,30,80),b=RI(r,30,80);
+    return {topic:'Angles in a triangle',tex:`\\text{Two angles of a triangle are ${a}° and ${b}°.}\\\\ \\text{Find the third.}`,
+      answer:String(180-a-b),value:180-a-b,unit:'°',
+      hints:['The three angles of any triangle always come to the same total.','That total is 180°, so subtract what you already have from it.',`180 − ${a} − ${b} = ${180-a-b}.`],
+      solution:`180 − ${a} − ${b} = ${180-a-b}°.`};}
+  const n=RI(r,5,d+8),interior=r1((n-2)*180/n);
+  return {topic:'Polygon angles',tex:`\\text{Find one interior angle of a regular ${n}-sided polygon. (1 dp)}`,
+    answer:String(interior),value:interior,unit:'°',tol:0.06,
+    hints:['A polygon splits into triangles from one corner, and each triangle brings 180°.',
+      `An ${n}-gon splits into ${n-2} triangles, so the angles total ${(n-2)*180}°. Regular means they are all equal.`,
+      `${(n-2)*180} ÷ ${n} = ${interior}.`],
+    solution:`Interior sum = (${n} − 2) × 180 = ${(n-2)*180}°; each angle = ${interior}°.`};
+}
+function gVolume(r,d){
+  const cyl=d>=4&&r()<0.5;
+  if(!cyl){const a=RI(r,2,12),b=RI(r,2,12),c=RI(r,2,12);
+    return {topic:'Volume',tex:`\\text{Find the volume of a box ${a} × ${b} × ${c}.}`,answer:String(a*b*c),value:a*b*c,
+      hints:['Volume of a box is just the three dimensions multiplied together.',`${a} × ${b} = ${a*b}, then bring in the third.`,`${a*b} × ${c} = ${a*b*c}.`],
+      solution:`${a} × ${b} × ${c} = ${a*b*c}.`};}
+  const rad=RI(r,2,7),h=RI(r,3,12),val=r1(Math.PI*rad*rad*h);
+  return {topic:'Volume of a cylinder',tex:`\\text{A cylinder has radius ${rad} and height ${h}. Find its volume. (1 dp)}`,
+    answer:String(val),value:val,tol:PI_TOL,
+    hints:['A cylinder is a circle dragged upwards — so it is the circular area multiplied by the height.',
+      `The circular face has area π × ${rad}² = ${rad*rad}π. Multiply by the height ${h}.`,`${rad*rad*h}π ≈ ${val}.`],
+    solution:`πr²h = π × ${rad*rad} × ${h} = ${val}.`};
+}
+function gSimilar(r,d){
+  const k=RI(r,2,4),a=RI(r,2,9),b=RI(r,3,12);
+  return {topic:'Similar triangles',tex:`\\text{Two similar triangles: a side of ${a} matches ${a*k}.}\\\\ \\text{What matches a side of ${b}?}`,
+    answer:String(b*k),value:b*k,
+    hints:['Similar shapes are the same picture at a different size, so every pair of matching sides shares one scale factor.',
+      `${a} → ${a*k} means the scale factor is ${k}.`,`${b} × ${k} = ${b*k}.`],
+    solution:`Scale factor ${a*k}/${a} = ${k}, so ${b} maps to ${b*k}.`};
+}
+function gCoordinates(r,d){
+  const x1=RI(r,-8,8),y1=RI(r,-8,8),trips=[[3,4,5],[6,8,10],[5,12,13]];
+  const [dx,dy,dist]=PK(r,trips);
+  const mid=r()<0.5&&d>=4;
+  const x2=x1+dx,y2=y1+dy;
+  if(mid)return {topic:'Coordinate geometry',tex:`\\text{Find the } x \\text{-coordinate of the midpoint of } (${x1}, ${y1}) \\text{ and } (${x2}, ${y2})`,
+    answer:String(r4((x1+x2)/2)),value:(x1+x2)/2,
+    hints:['A midpoint is the average of the endpoints, handled one coordinate at a time.',`For x: average ${x1} and ${x2}.`,`(${x1} + ${x2})/2 = ${r4((x1+x2)/2)}.`],
+    solution:`x-midpoint = (${x1} + ${x2})/2 = ${r4((x1+x2)/2)}.`};
+  return {topic:'Coordinate geometry',tex:`\\text{Find the distance between } (${x1}, ${y1}) \\text{ and } (${x2}, ${y2})`,
+    answer:String(dist),value:dist,
+    hints:['Drop a right triangle between the two points — the horizontal and vertical gaps are its legs.',
+      `The gaps are ${dx} across and ${dy} up, so Pythagoras applies: ${dx}² + ${dy}².`,`√${dx*dx+dy*dy} = ${dist}.`],
+    solution:`√(${dx}² + ${dy}²) = √${dx*dx+dy*dy} = ${dist}.`};
+}
+function gTrapezium(r,d){
+  const a=RI(r,3,14),b=a+RI(r,2,10),h=RI(r,2,12),val=r1((a+b)*h/2);
+  return {topic:'Area of a trapezium',tex:`\\text{A trapezium has parallel sides ${a} and ${b}, height ${h}.}\\\\ \\text{Find its area.}`,
+    answer:String(val),value:val,
+    hints:['Treat it as a rectangle whose width is the average of the two parallel sides.',`Average of ${a} and ${b} is ${r4((a+b)/2)}. Multiply by the height ${h}.`,`${r4((a+b)/2)} × ${h} = ${val}.`],
+    solution:`½(${a} + ${b}) × ${h} = ${val}.`};
+}
+
+/* ================= DAY 5 — SEQUENCES & FUNCTIONS ================= */
+
+function gArithSeq(r,d){
+  const a=RI(r,-6,12),diff=RI(r,2,9),n=RI(r,6,d*4+8);
+  const term=a+(n-1)*diff;
+  return {topic:'Arithmetic sequences',tex:`\\text{The sequence starts ${a}, ${a+diff}, ${a+2*diff}, ...}\\\\ \\text{What is term ${n}?}`,
+    answer:String(term),value:term,
+    hints:['The step between terms is constant — find it, then jump straight to the term you need instead of listing them all.',
+      `The step is ${diff}. Getting from term 1 to term ${n} takes ${n-1} steps, not ${n}.`,
+      `${a} + ${n-1} × ${diff} = ${term}.`],
+    solution:`aₙ = a₁ + (n−1)d = ${a} + ${n-1}×${diff} = ${term}.`};
+}
+function gArithSum(r,d){
+  const a=RI(r,1,9),diff=RI(r,1,7),n=RI(r,5,d*3+6);
+  const last=a+(n-1)*diff,tot=n*(a+last)/2;
+  return {topic:'Sum of a sequence',tex:`\\text{Add the first ${n} terms of ${a}, ${a+diff}, ${a+2*diff}, ...}`,
+    answer:String(tot),value:tot,
+    hints:['Pair the first term with the last, the second with the second-last — every pair has the same total. That is Gauss\'s trick.',
+      `The last term is ${a} + ${n-1}×${diff} = ${last}. Each pair sums to ${a+last}, and there are ${n}/2 pairs.`,
+      `${n} × ${a+last} ÷ 2 = ${tot}.`],
+    solution:`Sₙ = n(a₁ + aₙ)/2 = ${n}(${a} + ${last})/2 = ${tot}.`};
+}
+function gGeoSeq(r,d){
+  const a=RI(r,1,6),ratio=RI(r,2,3),n=RI(r,4,d+5);
+  const term=a*Math.pow(ratio,n-1);
+  return {topic:'Geometric sequences',tex:`\\text{The sequence starts ${a}, ${a*ratio}, ${a*ratio*ratio}, ...}\\\\ \\text{What is term ${n}?}`,
+    answer:String(term),value:term,
+    hints:['Here each term is multiplied, not added. Find the multiplier by dividing one term by the one before it.',
+      `${a*ratio} ÷ ${a} = ${ratio}. Reaching term ${n} means multiplying ${n-1} times over.`,
+      `${a} × ${ratio}^${n-1} = ${term}.`],
+    solution:`aₙ = a₁r^(n−1) = ${a} × ${ratio}^${n-1} = ${term}.`};
+}
+function gFunction(r,d){
+  const a=RI(r,2,6),b=NZ(r,-8,9),x=NZ(r,-5,7);
+  if(d<=3){const val=a*x+b;
+    return {topic:'Functions',tex:`f(x) = ${a}x ${sgn(b)} \\quad \\text{find } f(${nf(x)})`,answer:String(val),value:val,
+      hints:['f(x) is a machine: whatever sits in the brackets goes everywhere x appears.',`Put ${x} in place of x: ${a} × ${nf(x)} ${sgn(b)}.`,`= ${val}.`],
+      solution:`f(${x}) = ${a}(${x}) ${sgn(b)} = ${val}.`};}
+  const c=RI(r,2,5),e=NZ(r,-6,8),inner=c*x+e,val=a*inner+b;
+  return {topic:'Composite functions',tex:`f(x) = ${a}x ${sgn(b)}, \\; g(x) = ${c}x ${sgn(e)} \\\\ \\text{find } f(g(${nf(x)}))`,
+    answer:String(val),value:val,
+    hints:['Work from the inside out — g runs first and hands its output to f.',`g(${x}) = ${c}(${x}) ${sgn(e)} = ${inner}. Now feed ${inner} into f.`,`f(${inner}) = ${a} × ${inner} ${sgn(b)} = ${val}.`],
+    solution:`g(${x}) = ${inner}; f(${inner}) = ${val}.`};
+}
+function gGradient(r,d){
+  const x1=RI(r,-6,4),y1=RI(r,-8,8),dx=RI(r,1,5),m=NZ(r,-4,5);
+  const x2=x1+dx,y2=y1+m*dx;
+  const ask=d>=4&&r()<0.5;
+  if(ask){const c=y1-m*x1;
+    return {topic:'Straight lines',tex:`\\text{A line passes } (${x1}, ${y1}) \\text{ and } (${x2}, ${y2}).\\\\ \\text{Where does it cross the } y \\text{-axis?}`,
+      answer:String(c),value:c,
+      hints:['Get the gradient first — the intercept falls out once you know how steep the line is.',
+        `Gradient = (${y2} − ${y1})/(${x2} − ${x1}) = ${m}. Now use y = ${m}x + c with one of the points.`,
+        `${y1} = ${m}(${x1}) + c, so c = ${c}.`],
+      solution:`m = ${m}; substituting (${x1}, ${y1}) into y = mx + c gives c = ${c}.`};}
+  return {topic:'Straight lines',tex:`\\text{Find the gradient of the line through } (${x1}, ${y1}) \\text{ and } (${x2}, ${y2})`,
+    answer:String(m),value:m,
+    hints:['Gradient measures rise against run — vertical change divided by horizontal change.',
+      `Rise = ${y2} − ${y1} = ${y2-y1}; run = ${x2} − ${x1} = ${dx}.`,`${y2-y1} ÷ ${dx} = ${m}.`],
+    solution:`(${y2} − ${y1})/(${x2} − ${x1}) = ${y2-y1}/${dx} = ${m}.`};
+}
+function gModular(r,d){
+  const m=RI(r,3,d+6),q=RI(r,4,30),rem=RI(r,1,m-1),n=m*q+rem;
+  const pow=d>=4;
+  if(pow){const b=RI(r,2,5),e=RI(r,3,8),mm=RI(r,3,9),v=Math.pow(b,e)%mm;
+    return {topic:'Remainders',tex:`\\text{What is the remainder when } ${b}^{${e}} \\text{ is divided by ${mm}?}`,
+      answer:String(v),value:v,
+      hints:['You never need the full power — reduce after every multiplication and the numbers stay small.',
+        `${b}² = ${b*b}, which leaves ${b*b%mm} on division by ${mm}. Keep multiplying by ${b} and reducing each time.`,
+        `Carrying that through ${e} factors leaves ${v}.`],
+      solution:`${b}^${e} = ${Math.pow(b,e)}, and ${Math.pow(b,e)} mod ${mm} = ${v}. Reducing at each step gets there without the big number.`};}
+  return {topic:'Remainders',tex:`\\text{What is the remainder when ${n} is divided by ${m}?}`,answer:String(rem),value:rem,
+    hints:['The remainder is what is left after taking out as many whole copies of the divisor as fit.',
+      `${m} fits into ${n} exactly ${q} times, giving ${m*q}.`,`${n} − ${m*q} = ${rem}.`],
+    solution:`${n} = ${m}×${q} + ${rem}, so the remainder is ${rem}.`};
+}
+function gTriangular(r,d){
+  const n=RI(r,10,d*20+20),tot=n*(n+1)/2;
+  return {topic:'Sums of numbers',tex:`\\text{Add up every whole number from 1 to ${n}}`,answer:String(tot),value:tot,
+    hints:['There is a shortcut here that Gauss found as a schoolboy: pair the ends.',
+      `1 + ${n} = ${n+1}, 2 + ${n-1} = ${n+1}, and so on — ${n}/2 pairs of ${n+1}.`,`${n} × ${n+1} ÷ 2 = ${tot}.`],
+    solution:`n(n+1)/2 = ${n}×${n+1}/2 = ${tot}.`};
+}
+
+/* ================= DAY 6 — PROBABILITY ================= */
+
+function gSimpleProb(r,d){
+  const red=RI(r,2,9),blue=RI(r,2,9),green=d>=3?RI(r,2,7):0;
+  const tot=red+blue+green;
+  const want=PK(r,green?['red','blue','green']:['red','blue']);
+  const cnt={red,blue,green}[want];
+  const [n,dd]=fr(cnt,tot);
+  return {topic:'Basic probability',
+    tex:`\\text{A bag holds ${red} red, ${blue} blue${green?' and '+green+' green':''} balls.}\\\\ \\text{One is drawn. } P(\\text{${want}}) = ?`,
+    answer:frStr(n,dd),value:n/dd,format:'fraction',tol:FRAC_TOL,
+    hints:['Probability is the count of outcomes you want over the count of outcomes there are.',
+      `There are ${cnt} ${want} balls out of ${tot} altogether.`,`${cnt}/${tot} reduces to ${frStr(n,dd)}.`],
+    solution:`P = ${cnt}/${tot} = ${frStr(n,dd)}.`};
+}
+function gComplement(r,d){
+  const a=RI(r,1,9),b=RI(r,a+1,14),[n,dd]=fr(b-a,b);
+  return {topic:'Complementary events',tex:`\\text{An event has probability } \\frac{${a}}{${b}}.\\\\ \\text{What is the probability it does not happen?}`,
+    answer:frStr(n,dd),value:n/dd,format:'fraction',tol:FRAC_TOL,
+    hints:['Something either happens or it does not, and those two possibilities use up all the probability there is.',
+      `They must add to 1, so subtract: 1 − ${a}/${b}.`,`= ${b-a}/${b} = ${frStr(n,dd)}.`],
+    solution:`1 − ${a}/${b} = ${frStr(n,dd)}.`};
+}
+function gTwoEvents(r,d){
+  let a=RI(r,1,5),b=RI(r,a+1,9),c=RI(r,1,5),e=RI(r,c+1,9);
+  [a,b]=fr(a,b); [c,e]=fr(c,e);
+  const [n,dd]=fr(a*c,b*e);
+  return {topic:'Independent events',tex:`P(A) = \\frac{${a}}{${b}}, \\; P(B) = \\frac{${c}}{${e}} \\text{, independent.}\\\\ \\text{Find } P(A \\text{ and } B)`,
+    answer:frStr(n,dd),value:n/dd,format:'fraction',tol:FRAC_TOL,
+    hints:['Independent means one happening tells you nothing about the other — and "and" with independence means multiply.',
+      `Multiply straight across: (${a} × ${c})/(${b} × ${e}).`,`${a*c}/${b*e} = ${frStr(n,dd)}.`],
+    solution:`P(A and B) = ${a}/${b} × ${c}/${e} = ${frStr(n,dd)}.`};
+}
+function gWithoutRepl(r,d){
+  const red=RI(r,3,8),blue=RI(r,3,8),tot=red+blue;
+  const [n,dd]=fr(red*(red-1),tot*(tot-1));
+  return {topic:'Drawing without replacement',
+    tex:`\\text{${red} red and ${blue} blue balls. Two are drawn, no replacement.}\\\\ \\text{Find } P(\\text{both red})`,
+    answer:frStr(n,dd),value:n/dd,format:'fraction',tol:FRAC_TOL,
+    hints:['The first draw changes the bag, so the second probability is not the same as the first.',
+      `First draw: ${red}/${tot}. After a red leaves, only ${red-1} reds remain among ${tot-1} balls.`,
+      `${red}/${tot} × ${red-1}/${tot-1} = ${frStr(n,dd)}.`],
+    solution:`${red}/${tot} × ${red-1}/${tot-1} = ${frStr(n,dd)}.`};
+}
+function gDice(r,d){
+  const target=RI(r,4,10);
+  let c=0;for(let i=1;i<=6;i++)for(let j=1;j<=6;j++)if(i+j===target)c++;
+  const [n,dd]=fr(c,36);
+  return {topic:'Dice',tex:`\\text{Two fair dice are rolled.}\\\\ \\text{Find } P(\\text{total} = ${target})`,
+    answer:frStr(n,dd),value:n/dd,format:'fraction',tol:FRAC_TOL,
+    hints:['Two dice give 36 equally likely ordered outcomes — the totals themselves are not equally likely.',
+      `Count the ordered pairs adding to ${target}: there are ${c} of them out of 36.`,`${c}/36 = ${frStr(n,dd)}.`],
+    solution:`${c} favourable pairs out of 36 → ${frStr(n,dd)}.`};
+}
+function gAtLeastOne(r,d){
+  const p=RI(r,1,4),q=RI(r,p+2,7),n=RI(r,2,3);
+  const miss=Math.pow((q-p)/q,n),val=r4(1-miss);
+  return {topic:'At least one',
+    tex:`\\text{Each try succeeds with probability } \\frac{${p}}{${q}}.\\\\ \\text{With ${n} independent tries, } P(\\text{at least one success})? \\text{ (3 dp)}`,
+    answer:String(r4(val)),value:val,tol:0.002,
+    hints:['"At least one" is awkward head-on because it covers many cases. Its opposite covers exactly one.',
+      `The opposite is failing every time: (${q-p}/${q})^${n} = ${r4(miss)}.`,`1 − ${r4(miss)} = ${r4(val)}.`],
+    solution:`P(none) = (${q-p}/${q})^${n} = ${r4(miss)}; P(at least one) = ${r4(val)}.`};
+}
+function gCombinations(r,d){
+  const n=RI(r,5,d+7),k=RI(r,2,Math.min(4,n-1)),v=nCr(n,k);
+  return {topic:'Combinations',tex:`\\text{How many ways can ${k} people be chosen from ${n}?}`,answer:String(v),value:v,
+    hints:['Order does not matter here — picking Ann then Bob is the same committee as Bob then Ann.',
+      `Count ordered picks first: ${n} × ${n-1}${k>2?' × '+(n-2):''}${k>3?' × '+(n-3):''}. Then divide out the ${k}! orderings of the same group.`,
+      `That is ${v}.`],
+    solution:`C(${n},${k}) = ${n}!/(${k}!·${n-k}!) = ${v}.`};
+}
+function gExpected(r,d){
+  const p=RI(r,1,4),q=RI(r,p+1,6),win=RI(r,2,10)*10,n=RI(r,10,60);
+  const val=r2(n*p/q*win/1);
+  return {topic:'Expected value',tex:`\\text{A game pays ${win} with probability } \\frac{${p}}{${q}} \\text{, otherwise 0.}\\\\ \\text{What is the expected total over ${n} plays? (2 dp)}`,
+    answer:String(val),value:val,tol:0.02,
+    hints:['Expected value weights each payout by how often it happens — no single play ever pays this amount.',
+      `One play is worth ${p}/${q} × ${win} = ${r2(p/q*win)} on average.`,`Over ${n} plays: ${r2(p/q*win)} × ${n} = ${val}.`],
+    solution:`E = ${p}/${q} × ${win} = ${r2(p/q*win)} per play; × ${n} = ${val}.`};
+}
+function gConditional(r,d){
+  const both=RI(r,2,8),onlyB=RI(r,2,8),b=both+onlyB;
+  const [n,dd]=fr(both,b);
+  return {topic:'Conditional probability',
+    tex:`\\text{Of ${b} people who own a car, ${both} also own a bike.}\\\\ \\text{Given someone owns a car, } P(\\text{bike})?`,
+    answer:frStr(n,dd),value:n/dd,format:'fraction',tol:FRAC_TOL,
+    hints:['The condition shrinks the world you are counting in. You are no longer looking at everybody.',
+      `The new denominator is ${b} — car owners only. Of those, ${both} have a bike.`,`${both}/${b} = ${frStr(n,dd)}.`],
+    solution:`P(bike | car) = ${both}/${b} = ${frStr(n,dd)}.`};
+}
+
+/* ================= DAY 7 — STATISTICS ================= */
+
+function gMean(r,d){
+  const k=RI(r,3,d<=2?5:7),nums=[];
+  for(let i=0;i<k;i++)nums.push(RI(r,2,d<=2?30:120));
+  const rem=sum(nums)%k; if(rem)nums[k-1]+=(k-rem);
+  const val=sum(nums)/k;
+  return {topic:'Mean',tex:`\\text{Find the mean of } ${nums.join(',\\; ')}`,answer:String(val),value:val,
+    hints:['The mean is the total shared out equally among all the values.',`The ${k} numbers add to ${sum(nums)}.`,`${sum(nums)} ÷ ${k} = ${val}.`],
+    solution:`Sum ${sum(nums)}, count ${k}, mean ${val}.`};
+}
+function gMedianMode(r,d){
+  const k=RI(r,5,9),nums=[];
+  for(let i=0;i<k;i++)nums.push(RI(r,1,40));
+  const mode=r()<0.4;
+  if(mode){const v=PK(r,nums);nums.push(v,v);
+    const counts={};nums.forEach(x=>counts[x]=(counts[x]||0)+1);
+    const best=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+    if(+best[1]<3)return gMedianMode(mulberry32(RI(r,1,1e6)),d);
+    return {topic:'Mode',tex:`\\text{Find the mode of } ${nums.join(',\\; ')}`,answer:best[0],value:+best[0],
+      hints:['The mode is about frequency, not size — which value shows up most often?',
+        'Tally each distinct value as you scan the list; one of them appears three times.',`That value is ${best[0]}.`],
+      solution:`${best[0]} appears ${best[1]} times, more than any other value.`};}
+  const sorted=[...nums].sort((a,b)=>a-b);
+  const mid=sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+  return {topic:'Median',tex:`\\text{Find the median of } ${nums.join(',\\; ')}`,answer:String(r4(mid)),value:mid,
+    hints:['The median is the middle value once the list is in order — sorting is not optional here.',
+      `Sorted: ${sorted.join(', ')}. With ${sorted.length} values${sorted.length%2?', one sits exactly in the middle':', the middle falls between two, so average them'}.`,
+      `The median is ${r4(mid)}.`],
+    solution:`Sorted: ${sorted.join(', ')} → median ${r4(mid)}.`};
+}
+function gRange(r,d){
+  const k=RI(r,5,8),nums=[];for(let i=0;i<k;i++)nums.push(RI(r,3,90));
+  const val=Math.max(...nums)-Math.min(...nums);
+  return {topic:'Range',tex:`\\text{Find the range of } ${nums.join(',\\; ')}`,answer:String(val),value:val,
+    hints:['Range measures spread with a single subtraction.',`Largest ${Math.max(...nums)}, smallest ${Math.min(...nums)}.`,`${Math.max(...nums)} − ${Math.min(...nums)} = ${val}.`],
+    solution:`${Math.max(...nums)} − ${Math.min(...nums)} = ${val}.`};
+}
+function gMissingMean(r,d){
+  const k=RI(r,4,6),mean=RI(r,10,60),shown=[];
+  for(let i=0;i<k-1;i++)shown.push(RI(r,2,mean*2));
+  const need=mean*k-sum(shown);
+  return {topic:'Working back from a mean',
+    tex:`\\text{${k} numbers have mean ${mean}. ${k-1} of them are } ${shown.join(',\\; ')}.\\\\ \\text{Find the missing one.}`,
+    answer:String(need),value:need,
+    hints:['Run the mean backwards: knowing the mean and the count tells you the total exactly.',
+      `Total = ${mean} × ${k} = ${mean*k}. The listed values account for ${sum(shown)}.`,`${mean*k} − ${sum(shown)} = ${need}.`],
+    solution:`Required total ${mean*k}, minus known sum ${sum(shown)} → ${need}.`};
+}
+function gWeighted(r,d){
+  const w1=RI(r,1,4),w2=RI(r,1,4),s1=RI(r,40,95),s2=RI(r,40,95);
+  const val=r2((w1*s1+w2*s2)/(w1+w2));
+  return {topic:'Weighted mean',
+    tex:`\\text{A grade is ${w1} parts coursework (${s1}) and ${w2} parts exam (${s2}).}\\\\ \\text{Find the overall grade. (2 dp)}`,
+    answer:String(val),value:val,tol:0.02,
+    hints:['A plain average would treat both scores as equally important, and here they are not.',
+      `Multiply each score by its weight: ${w1}×${s1} + ${w2}×${s2} = ${w1*s1+w2*s2}. Then divide by the total weight ${w1+w2}, not by 2.`,
+      `${w1*s1+w2*s2} ÷ ${w1+w2} = ${val}.`],
+    solution:`(${w1}×${s1} + ${w2}×${s2})/${w1+w2} = ${val}.`};
+}
+function gMeanShift(r,d){
+  const k=RI(r,4,8),mean=RI(r,10,40),extra=RI(r,2,90);
+  const val=r2((mean*k+extra)/(k+1));
+  return {topic:'How a mean moves',
+    tex:`\\text{${k} numbers have mean ${mean}. A value of ${extra} is added.}\\\\ \\text{What is the new mean? (2 dp)}`,
+    answer:String(val),value:val,tol:0.02,
+    hints:['Go back to totals — means do not average with each other, but totals always add.',
+      `Old total ${mean*k}, plus ${extra}, gives ${mean*k+extra}. There are now ${k+1} values.`,
+      `${mean*k+extra} ÷ ${k+1} = ${val}.`],
+    solution:`New total ${mean*k+extra} over ${k+1} values = ${val}.`};
+}
+function gIQR(r,d){
+  const nums=[];for(let i=0;i<7;i++)nums.push(RI(r,1,60));
+  const s=[...nums].sort((a,b)=>a-b);
+  const q1=s[1],q3=s[5],val=q3-q1;
+  return {topic:'Interquartile range',tex:`\\text{Find the interquartile range of } ${nums.join(',\\; ')}`,
+    answer:String(val),value:val,
+    hints:['The IQR ignores the extremes and measures the spread of the middle half, so the list must be sorted first.',
+      `Sorted: ${s.join(', ')}. With 7 values the median is the 4th; Q1 is the middle of the lower three (${s[1]}) and Q3 the middle of the upper three (${s[5]}).`,
+      `${q3} − ${q1} = ${val}.`],
+    solution:`Q1 = ${q1}, Q3 = ${q3}, IQR = ${val}.`};
+}
+function gVariance(r,d){
+  const k=4,base=RI(r,5,30),nums=[];
+  for(let i=0;i<k;i++)nums.push(base+RI(r,-6,6));
+  const rem=sum(nums)%k; if(rem)nums[k-1]+=(k-rem);
+  const m=sum(nums)/k;
+  const varr=sum(nums.map(x=>(x-m)*(x-m)))/k;
+  const sd=r2(Math.sqrt(varr));
+  const wantSd=d>=5;
+  return {topic:wantSd?'Standard deviation':'Variance',
+    tex:`\\text{Find the ${wantSd?'standard deviation':'variance'} of } ${nums.join(',\\; ')} \\text{ (2 dp)}`,
+    answer:String(wantSd?sd:r2(varr)),value:wantSd?sd:r2(varr),tol:0.02,
+    hints:['Spread is measured from the mean, so the mean comes first — here it is '+m+'.',
+      `Deviations: ${nums.map(x=>x-m).join(', ')}. Square them so the signs stop cancelling, then average: that average is the variance, ${r2(varr)}.`,
+      wantSd?`Standard deviation is the square root of the variance: √${r2(varr)} = ${sd}.`:`The variance is ${r2(varr)}.`],
+    solution:`Mean ${m}; squared deviations average to ${r2(varr)}${wantSd?', and √'+r2(varr)+' = '+sd:''}.`};
+}
+function gFreqTable(r,d){
+  const vals=[1,2,3,4],f=[RI(r,2,9),RI(r,2,9),RI(r,2,9),RI(r,2,9)];
+  const n=sum(f),tot=sum(vals.map((v,i)=>v*f[i])),val=r2(tot/n);
+  return {topic:'Mean from a table',
+    tex:`\\text{Values 1, 2, 3, 4 occur ${f.join(', ')} times.}\\\\ \\text{Find the mean. (2 dp)}`,
+    answer:String(val),value:val,tol:0.02,
+    hints:['Each value carries as much weight as its frequency — do not average 1, 2, 3, 4 on their own.',
+      `Multiply each value by its frequency and add: ${vals.map((v,i)=>v+'×'+f[i]).join(' + ')} = ${tot}. There are ${n} data points in total.`,
+      `${tot} ÷ ${n} = ${val}.`],
+    solution:`Σfx = ${tot}, Σf = ${n}, mean = ${val}.`};
+}
+
+/* ================= DAY PLAN ================= */
+
+const DAYS=[
+  {name:'Number & fractions',short:'Number',pool:[
+    {f:gOrderOps,min:1},{f:gSimplify,min:1,max:3},{f:gNegatives,min:1,max:4},{f:gPowers,min:1},
+    {f:gFracAddSub,min:2},{f:gConvert,min:2},{f:gGcdLcm,min:2},
+    {f:gFracMulDiv,min:3},{f:gPrimes,min:3}]},
+  {name:'Percent, ratio & proportion',short:'Percent',pool:[
+    {f:gPercentOf,min:1,max:3},{f:gRatio,min:1,max:4},{f:gUnitRate,min:1,max:3},
+    {f:gProportion,min:2,max:4},{f:gPercentChange,min:2},
+    {f:gPercentWord,min:3},{f:gReversePercent,min:4},
+    {f:gCompound,min:4},{f:gSuccessive,min:5}]},
+  {name:'Algebra',short:'Algebra',pool:[
+    {f:gLinear,min:1},{f:gEvaluate,min:1,max:3},{f:gRearrange,min:2,max:3},
+    {f:gExpand,min:2},{f:gInequality,min:3},
+    {f:gFactor,min:4},{f:gSimultaneous,min:4},{f:gQuadratic,min:4}]},
+  {name:'Geometry',short:'Geometry',pool:[
+    {f:gRectTri,min:1,max:2},{f:gAngles,min:1},{f:gVolume,min:2},
+    {f:gPerimeter,min:2,max:3},{f:gCircle,min:2},{f:gSimilar,min:3,max:4},
+    {f:gTrapezium,min:3},{f:gPythagoras,min:3},{f:gCoordinates,min:4}]},
+  {name:'Sequences & functions',short:'Sequences',pool:[
+    {f:gArithSeq,min:1},{f:gFunction,min:1},{f:gTriangular,min:2,max:4},
+    {f:gGeoSeq,min:2},{f:gGradient,min:3},{f:gArithSum,min:3},{f:gModular,min:3}]},
+  {name:'Probability',short:'Chance',pool:[
+    {f:gSimpleProb,min:1,max:2},{f:gComplement,min:1,max:2},{f:gDice,min:2,max:4},
+    {f:gTwoEvents,min:2,max:3},{f:gWithoutRepl,min:3},{f:gCombinations,min:3},
+    {f:gConditional,min:4},{f:gAtLeastOne,min:4},{f:gExpected,min:5}]},
+  {name:'Statistics',short:'Stats',pool:[
+    {f:gMean,min:1,max:2},{f:gRange,min:1,max:2},{f:gMedianMode,min:1,max:3},
+    {f:gMissingMean,min:2,max:4},{f:gFreqTable,min:3},{f:gMeanShift,min:3},
+    {f:gWeighted,min:4},{f:gIQR,min:4},{f:gVariance,min:4}]}
+];
+
+const PER_DAY=15;
+function difficultyFor(i){return Math.min(5,1+Math.floor(i/3));}
+
+function buildWeek(seed){
+  const week=[];
+  for(let day=0;day<7;day++){
+    const tasks=[],seen=new Set();
+    let lastTopic='';
+    for(let i=0;i<PER_DAY;i++){
+      const r=mulberry32(seed*10000+day*971+i*7919);
+      const d=difficultyFor(i);
+      const pool=DAYS[day].pool.filter(g=>g.min<=d&&(g.max||9)>=d);
+      let t=null;
+      let chosen='';
+      for(let a=0;a<14;a++){
+        const g=pool[Math.floor(r()*pool.length)];
+        t=g.f(r,d); chosen=g.f.name;
+        if(t.topic!==lastTopic&&!seen.has(t.tex))break;
+      }
+      seen.add(t.tex); lastTopic=t.topic;
+      t.id=`w${seed}d${day}i${i}`; t.diff=d; t.points=d*10; t.key=chosen;
+      if(!t.tol)t.tol=t.format==='fraction'?FRAC_TOL:1e-6;
+      tasks.push(t);
+    }
+    week.push(tasks);
+  }
+  return week;
+}
+
+const KEYS={};
+DAYS.forEach((D,di)=>D.pool.forEach(g=>{KEYS[g.f.name]={f:g.f,day:di,min:g.min,max:g.max||5,subject:D.short}}));
+function makeTask(key,diff,seed){
+  const G=KEYS[key]; if(!G)return null;
+  const d=Math.max(G.min,Math.min(G.max,diff));
+  const r=mulberry32(seed>>>0);
+  const t=G.f(r,d);
+  t.key=key; t.diff=d; t.points=d*10; t.id='r-'+key+'-'+seed;
+  if(!t.tol)t.tol=t.format==='fraction'?FRAC_TOL:1e-6;
+  return t;
+}
+
+
+/* ---------------- content ---------------- */
+const QUOTES=[
+ ['Mathematics is the queen of the sciences','Gauss'],
+ ['The essence of mathematics lies in its freedom','Cantor'],
+ ['There is no royal road to geometry','Euclid'],
+ ['God made the integers; all else is the work of man','Kronecker'],
+ ['Pure mathematics is the poetry of logical ideas','Einstein'],
+ ['An equation means nothing unless it expresses a thought','Ramanujan'],
+ ['Mathematics is the art of giving the same name to different things','Poincaré'],
+ ['In mathematics you don\'t understand things, you get used to them','von Neumann'],
+ ['Statistics is the grammar of science','Karl Pearson'],
+ ['All models are wrong, but some are useful','George Box'],
+ ['We must know. We will know','Hilbert'],
+ ['Obvious is the most dangerous word in mathematics','E. T. Bell'],
+ ['The probable is what usually happens','Aristotle'],
+ ['Give me a place to stand and I will move the Earth','Archimedes'],
+ ['Nature is written in the language of mathematics','Galileo'],
+ ['Perfect numbers, like perfect men, are very rare','Descartes'],
+ ['Mathematics knows no races or geographic boundaries','Hilbert'],
+ ['A mathematician turns coffee into theorems','Rényi'],
+ ['Chance favours only the prepared mind','Pasteur'],
+ ['Nothing takes place without sufficient reason','Leibniz']
+];
+const BUST=x=>`<svg viewBox="0 0 200 270" fill="none" stroke="currentColor" stroke-width="1.5">
+<path d="M22 262c0-52 35-82 78-82s78 30 78 82" opacity=".9"/><ellipse cx="100" cy="96" rx="45" ry="55"/>
+<path d="M78 108c4 6 10 9 16 9" opacity=".6"/><path d="M100 92v22c0 5 4 8 9 8" opacity=".6"/>${x}</svg>`;
+const FIGURES=[
+ {n:'Euclid',y:'c. 300 BC',f:'\\gcd(a,b)=\\gcd(b,\\;a\\bmod b)',
+  svg:BUST('<path d="M62 118c-4 26 8 48 38 60 30-12 42-34 38-60" opacity=".75"/><path d="M55 74c14-20 76-20 90 0" opacity=".75"/>')},
+ {n:'Leonhard Euler',y:'1707—1783',f:'e^{i\\pi}+1=0',
+  svg:BUST('<path d="M55 96c-16 2-24 16-20 30 3 12 14 16 22 12" opacity=".75"/><path d="M145 96c16 2 24 16 20 30-3 12-14 16-22 12" opacity=".75"/><path d="M52 70c10-28 86-28 96 0" opacity=".75"/>')},
+ {n:'Carl Friedrich Gauss',y:'1777—1855',f:'\\sum_{k=1}^{n}k=\\frac{n(n+1)}{2}',
+  svg:BUST('<path d="M54 84c8-32 84-32 92 0 4 14 0 26-6 30" opacity=".75"/><path d="M60 140c10 10 20 14 40 14s30-4 40-14" opacity=".5"/>')},
+ {n:'Srinivasa Ramanujan',y:'1887—1920',f:'1729=1^3+12^3=9^3+10^3',
+  svg:BUST('<path d="M50 78c6-30 94-30 100 0 2 10-4 16-10 16H60c-6 0-12-6-10-16z" opacity=".8"/>')},
+ {n:'Emmy Noether',y:'1882—1935',f:'\\text{symmetry}\\Rightarrow\\text{conservation}',
+  svg:BUST('<path d="M50 90c0-38 100-38 100 0" opacity=".75"/><circle cx="152" cy="66" r="17" opacity=".75"/><path d="M56 112c-8 4-10 14-4 20" opacity=".5"/>')}
+];
+
+/* ---------------- cloud + local storage ----------------
+   Values come from config.js, which is the only file you need to edit. */
+const CLOUD=(window.PRISMA_CONFIG&&window.PRISMA_CONFIG.url)?window.PRISMA_CONFIG:{url:'',key:''};
+const cloudOn=()=>!!(CLOUD.url&&CLOUD.key);
+const H=()=>({apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json'});
+async function cloudPut(row){ if(!cloudOn())return false;
+  try{const r=await fetch(CLOUD.url+'/rest/v1/players?on_conflict=name',
+    {method:'POST',headers:{...H(),Prefer:'resolution=merge-duplicates'},body:JSON.stringify(row)});return r.ok}catch(e){return false} }
+async function cloudGet(name){ if(!cloudOn())return null;
+  try{const r=await fetch(CLOUD.url+'/rest/v1/players?select=*&name=eq.'+encodeURIComponent(name),{headers:H()});
+    const j=await r.json();return Array.isArray(j)&&j[0]?j[0]:null}catch(e){return null} }
+async function cloudBoard(){ if(!cloudOn())return null;
+  try{const r=await fetch(CLOUD.url+'/rest/v1/players?select=name,xp,level,solved&order=xp.desc&limit=50',{headers:H()});
+    const j=await r.json();return Array.isArray(j)?j:null}catch(e){return null} }
+const local={
+  async get(k){ if(window.storage){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null}catch(e){return null}}
+    try{return JSON.parse(localStorage.getItem(k))}catch(e){return null} },
+  async set(k,v){ if(window.storage){try{await window.storage.set(k,JSON.stringify(v));return}catch(e){return}}
+    try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+};
+
+/* ---------------- week ---------------- */
+function isoWeek(dt){const t=new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate()));
+  const dn=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-dn+3);
+  const f=new Date(Date.UTC(t.getUTCFullYear(),0,4));const fd=(f.getUTCDay()+6)%7;f.setUTCDate(f.getUTCDate()-fd+3);
+  return{year:t.getUTCFullYear(),week:1+Math.round((t-f)/604800000)}}
+const NOW=new Date(),WK=isoWeek(NOW),SEED=WK.year*100+WK.week,TODAY=(NOW.getDay()+6)%7;
+const WEEK=buildWeek(SEED),TOTAL=PER_DAY*7;
+const DAYKEY=d=>new Date(d).toISOString().slice(0,10);
+const ALLKEYS=Object.keys(KEYS);
+
+let P={name:'',xp:0,solved:{},ach:[],mast:{},log:{},goal:150,run:0,bestRun:0,firstTry:0,tries:0,reviews:0,placed:false,updated:0};
+let day=TODAY,idx=0,mode='play',cur=null,shown=0,tries=0,over=false,plan=[],planAt=0;
+
+const xpFor=n=>350*(n-1)*(n-1), levelOf=x=>1+Math.floor(Math.sqrt(x/350));
+const $=i=>document.getElementById(i);
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,32)||'player';
+function tex(el,s){ if(window.katex){try{katex.render(s,el,{throwOnError:false,displayMode:false});return}catch(e){}} el.textContent=texToPlain(s); }
+
+/* ---------------- mastery & spaced review ---------------- */
+const IVL=[0,1,3,7,16,35];
+function mast(k){ return P.mast[k]||(P.mast[k]={lvl:0,seen:0,right:0,due:0}); }
+function bump(k,ok){ const m=mast(k); m.seen++;
+  if(ok){m.right++;m.lvl=Math.min(5,m.lvl+1);m.due=Date.now()+IVL[m.lvl]*864e5;}
+  else{m.lvl=Math.max(0,m.lvl-1);m.due=Date.now()+432e5;} }
+function dueNow(){ const t=Date.now();
+  return ALLKEYS.filter(k=>P.mast[k]&&P.mast[k].seen>0&&P.mast[k].due<=t).sort((a,b)=>P.mast[a].due-P.mast[b].due); }
+function weakest(){ return ALLKEYS.slice().sort((a,b)=>(P.mast[a]?P.mast[a].lvl:0)-(P.mast[b]?P.mast[b].lvl:0)).slice(0,12); }
+function subjectScore(di){
+  const ks=ALLKEYS.filter(k=>KEYS[k].day===di);
+  return Math.round(100*ks.reduce((s,k)=>s+(P.mast[k]?P.mast[k].lvl:0),0)/(ks.length*5));
+}
+function streak(){
+  let n=0,d=new Date();
+  if((P.log[DAYKEY(d)]||0)<P.goal)d.setDate(d.getDate()-1);
+  for(;;){ if((P.log[DAYKEY(d)]||0)>=P.goal){n++;d.setDate(d.getDate()-1)} else break }
+  return n;
+}
+function earn(pts){ const k=DAYKEY(new Date()); P.log[k]=(P.log[k]||0)+pts; P.xp+=pts; }
+
+/* ---------------- awards ---------------- */
+const ACH=[
+ {id:'first',t:'Off the mark',d:'Solve your first problem',f:s=>s.n>=1},
+ {id:'25',t:'Warmed up',d:'Solve 25 problems',f:s=>s.n>=25},
+ {id:'100',t:'Century',d:'Solve 100 problems',f:s=>s.n>=100},
+ {id:'300',t:'Three hundred',d:'Solve 300 problems',f:s=>s.n>=300},
+ {id:'day',t:'Full plate',d:'Finish all fifteen in one day',f:s=>s.dayDone},
+ {id:'clean',t:'Unaided',d:'Finish a day with no hints and no misses',f:s=>s.clean},
+ {id:'run20',t:'Cold streak',d:'Twenty in a row with no hint',f:s=>s.bestRun>=20},
+ {id:'goal7',t:'Seven days',d:'Hit your daily goal a week running',f:s=>s.streak>=7},
+ {id:'goal30',t:'A month of it',d:'Thirty days running',f:s=>s.streak>=30},
+ {id:'rev50',t:'Nothing forgotten',d:'Clear 50 review problems',f:s=>s.rev>=50},
+ {id:'lvl3',t:'Level three',d:'Reach level 3',f:s=>s.lv>=3},
+ {id:'lvl6',t:'Level six',d:'Reach level 6',f:s=>s.lv>=6},
+ {id:'hard',t:'Deep end',d:'Twenty problems at difficulty 5',f:s=>s.hard>=20},
+ {id:'all7',t:'Polymath',d:'Score in all seven subjects',f:s=>s.subjects>=7},
+ {id:'mast',t:'Fluent',d:'Take any subject past 80%',f:s=>s.best>=80},
+ {id:'week',t:'Hundred and five',d:'Clear a whole week',f:s=>s.weekDone}
+];
+const rec=id=>P.solved[id];
+function dayStat(dn){ let n=0,clean=true;
+  for(const t of WEEK[dn]){const r=rec(t.id); if(r&&r.s>0)n++; else clean=false; if(r&&(r.h>0||r.a>1))clean=false;}
+  return{n,clean}; }
+function firstOpen(dn){ for(let i=0;i<PER_DAY;i++) if(!rec(WEEK[dn][i].id)) return i; return 0; }
+function awards(){
+  const v=Object.values(P.solved),ok=v.filter(x=>x.s>0);
+  const full=[0,1,2,3,4,5,6].map(i=>dayStat(i).n===PER_DAY);
+  const st={n:ok.length,lv:levelOf(P.xp),bestRun:P.bestRun,rev:P.reviews,streak:streak(),
+    hard:ok.filter(x=>x.d===5).length,subjects:new Set(ok.map(x=>x.day)).size,
+    best:Math.max(...[0,1,2,3,4,5,6].map(subjectScore)),
+    dayDone:full.some(Boolean),weekDone:full.every(Boolean),
+    clean:[0,1,2,3,4,5,6].some(i=>{const s=dayStat(i);return s.n===PER_DAY&&s.clean})};
+  let got=null;
+  for(const a of ACH) if(!P.ach.includes(a.id)&&a.f(st)){P.ach.push(a.id);got=a}
+  return{st,got};
+}
+
+/* ---------------- header ---------------- */
+function head(){
+  const lv=levelOf(P.xp),a=xpFor(lv),b=xpFor(lv+1),t=P.log[DAYKEY(new Date())]||0;
+  $('fLevel').textContent=lv; $('fXp').textContent=P.xp;
+  $('fToday').textContent=t; $('fGoal').textContent=P.goal;
+  $('fMeter').style.width=Math.min(100,Math.round(100*t/P.goal))+'%';
+  $('fStreak').textContent=streak(); $('fName').textContent=P.name;
+  const q=dueNow().length; $('qCount').textContent=q?' '+q:'';
+}
+
+/* ---------------- question runner ---------------- */
+function serve(task,ctx){
+  cur=task; shown=0; tries=0; over=false;
+  const host=ctx.host, tpl=$('tpl-q').content.cloneNode(true);
+  host.innerHTML=''; host.appendChild(tpl);
+  const q=host.querySelector('.qz'), inp=host.querySelector('input');
+  host.querySelector('.subj').textContent=ctx.label;
+  host.querySelector('.dots').innerHTML=[1,2,3,4,5].map(i=>`<i class="${i<=task.diff?'on':''}"></i>`).join('');
+  host.querySelector('.pts').textContent=ctx.points+' pts';
+  host.querySelector('.count').textContent=ctx.count||'';
+  tex(q,task.tex);
+  inp.placeholder=task.unit==='%'?'answer in percent':(task.format==='fraction'?'a fraction like 3/4, or a decimal':'your answer');
+  const costEl=host.querySelector('.cost'),hintBtn=host.querySelector('.hint'),steps=host.querySelector('.steps'),
+        checkBtn=host.querySelector('.check'),nextBtn=host.querySelector('.next'),say=host.querySelector('.verdict');
+  const cost=()=>costEl.textContent=over?'The full walk-through is below.'
+    :shown<3?`Each step costs ${Math.round(ctx.points*.25)} points. Taking all three still leaves you ${Math.round(ctx.points*.25)}.`
+            :'That was the whole method.';
+  const push=(n,all)=>{ for(let i=all?0:n-1;i<n;i++){
+      const p=document.createElement('div'); p.className='step'+(i===2?' full':'');
+      p.innerHTML=`<b>${i===0?'Where to start':i===1?'The next move':'The whole method'}</b>${i===2&&all?task.solution:task.hints[i]}`;
+      steps.appendChild(p); } };
+  const finish=()=>{ over=true; inp.disabled=true; hintBtn.disabled=true;
+    checkBtn.hidden=true; nextBtn.hidden=false; nextBtn.textContent=ctx.nextLabel||'Next'; cost();
+    setTimeout(()=>nextBtn.focus(),80); };
+  cost();
+  if(ctx.answered){ over=true; inp.value=ctx.answered.g||''; inp.disabled=true; hintBtn.disabled=true;
+    checkBtn.hidden=true; nextBtn.hidden=false; nextBtn.textContent=ctx.nextLabel||'Next';
+    say.textContent=ctx.answered.s>0?`Solved — ${ctx.answered.s} points.`:'Answered — no points from this one.';
+    say.className='verdict '+(ctx.answered.s>0?'ok':'no'); push(3,true); hintBtn.textContent='Solution shown'; cost();
+  } else setTimeout(()=>inp.focus(),80);
+
+  hintBtn.onclick=()=>{ if(over||shown>=3)return; shown++; push(shown);
+    hintBtn.textContent=shown===1?'I need the next step':shown===2?'Show the whole method':'That was the whole method';
+    if(shown===3)hintBtn.disabled=true; cost(); inp.focus(); };
+  nextBtn.onclick=()=>ctx.onNext();
+  checkBtn.onclick=go; inp.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+  function parse(s){ s=String(s).trim().replace(',','.').replace(/\s/g,'').replace(/%$/,'');
+    if(/^-?\d+\/-?\d+$/.test(s)){const[a,b]=s.split('/').map(Number);return b?a/b:NaN}
+    if(/^-?\d*\.?\d+$/.test(s))return Number(s); return NaN; }
+  function go(){
+    if(over)return;
+    const raw=inp.value,v=parse(raw);
+    if(!isFinite(v)){say.textContent='That is not a number I can read. Try 12, -3.5 or 3/4.';say.className='verdict no';return}
+    tries++; P.tries++;
+    const right=Math.abs(v-task.value)<=task.tol;
+    if(right){
+      const pts=Math.round(ctx.points*(1-.25*shown)*(tries===1?1:tries===2?.7:.45));
+      say.textContent=`Correct — ${pts} points${raw.trim()!==task.answer?`. Written plainly: ${task.answer}${task.unit||''}.`:'.'}`;
+      say.className='verdict ok'; finish(); ctx.onGrade(true,pts,{h:shown,a:tries,g:raw});
+    } else if(tries>=3){
+      say.textContent=`Not it — the answer was ${task.answer}${task.unit||''}. The full method is below.`;
+      say.className='verdict no'; steps.innerHTML=''; push(3,true); finish(); ctx.onGrade(false,0,{h:shown,a:tries,g:raw});
+    } else {
+      say.textContent=tries===1?'Not quite. Two tries left — check the arithmetic before changing approach.'
+                               :'Still off. One try left, and a hint costs less than a miss.';
+      say.className='verdict no'; inp.select();
+    }
+    const g=awards().got; if(g)say.textContent+='  Achievement: '+g.t+'.';
+  }
+}
+
+/* ---------------- today ---------------- */
+function rail(){
+  const box=$('rail'); box.innerHTML='';
+  DAYS.forEach((D,i)=>{
+    const s=dayStat(i),b=document.createElement('button');
+    b.className=s.n===PER_DAY?'full':'';
+    b.innerHTML=`<span class="n">${D.short}</span><span class="g"><i style="width:${100*s.n/PER_DAY}%"></i></span>`;
+    b.setAttribute('aria-current',i===day?'true':'false');
+    if(i>TODAY){b.disabled=true;b.title='Unlocks later this week'}
+    b.onclick=()=>{day=i;idx=firstOpen(i);drawPlay();ghost()};
+    box.appendChild(b);
+  });
+}
+function pips(){
+  const box=$('pips'); box.innerHTML='';
+  WEEK[day].forEach((t,i)=>{const r=rec(t.id),e=document.createElement('i');
+    e.className=i===idx?'now':r?(r.s>0?'done':'miss'):''; box.appendChild(e)});
+}
+function drawPlay(){
+  head(); rail(); pips();
+  const t=WEEK[day][idx];
+  serve(t,{host:$('qbox'),label:t.topic,points:t.points,count:`${idx+1} of ${PER_DAY} · ${DAYS[day].name}`,
+    answered:rec(t.id), nextLabel:idx<PER_DAY-1?'Next problem':'See progress',
+    onGrade:(ok,pts,meta)=>{
+      if(ok){earn(pts); if(meta.h===0){P.run++;P.bestRun=Math.max(P.bestRun,P.run)}else P.run=0; if(meta.a===1)P.firstTry++}
+      else P.run=0;
+      P.solved[t.id]={s:pts,h:meta.h,a:meta.a,g:meta.g,d:t.diff,day};
+      bump(t.key,ok); save(); head(); rail(); pips();
+    },
+    onNext:()=>{ if(idx<PER_DAY-1){idx++;drawPlay()} else view('progress') }});
+}
+
+/* ---------------- review ---------------- */
+function drawReview(){
+  head();
+  const host=$('rbox'), q=dueNow();
+  if(!q.length){
+    const w=weakest();
+    host.innerHTML=`<p class="empty">Nothing is due right now.</p>
+      <p class="note">Problems come back here on a widening schedule — one day after you first get them right, then three, seven, sixteen, thirty-five. Miss one and it returns tomorrow. You can also drill your weakest topics ahead of schedule.</p>
+      <div class="chips"><button id="drill">Practise my weakest topics</button></div>`;
+    $('drill').onclick=()=>{ plan=w.slice(0,8); planAt=0; nextReview(); };
+    return;
+  }
+  plan=q.slice(0,20); planAt=0; nextReview();
+}
+function nextReview(){
+  if(planAt>=plan.length){ drawReview(); return; }
+  const k=plan[planAt], m=mast(k);
+  const t=makeTask(k,Math.max(1,Math.min(5,m.lvl+1)),(Date.now()/1000|0)+planAt*7919+k.length*131);
+  const pts=Math.round(t.points*.6);
+  serve(t,{host:$('rbox'),label:KEYS[k].subject+' · '+t.topic,points:pts,
+    count:`${planAt+1} of ${plan.length} in this review`,nextLabel:planAt<plan.length-1?'Next':'Done',
+    onGrade:(ok,got)=>{ if(ok){earn(got);P.reviews++} bump(k,ok); save(); head(); },
+    onNext:()=>{ planAt++; nextReview(); }});
+}
+
+/* ---------------- placement ---------------- */
+function startPlacement(){
+  $('open').style.display='none'; $('app').classList.add('on');
+  plan=DAYS.map((D,i)=>{const k=D.pool.find(g=>(g.min<=3)&&((g.max||5)>=3))||D.pool[0];return k.f.name});
+  planAt=0; view('review'); nextPlacement();
+}
+function nextPlacement(){
+  if(planAt>=plan.length){ P.placed=true; save(); head();
+    $('rbox').innerHTML=`<p class="empty">Placement done.</p>
+      <p class="note">Your review schedule now starts from where you actually are rather than from zero. Subjects you handled will come back in a few days; the rest come back tomorrow.</p>`;
+    return; }
+  const k=plan[planAt];
+  const t=makeTask(k,3,918273+planAt*4643);
+  serve(t,{host:$('rbox'),label:KEYS[k].subject,points:0,count:`Placement — ${planAt+1} of ${plan.length}`,
+    nextLabel:planAt<plan.length-1?'Next':'Finish',
+    onGrade:(ok)=>{ const di=KEYS[k].day;
+      ALLKEYS.filter(x=>KEYS[x].day===di).forEach(x=>{const m=mast(x);m.seen=1;m.lvl=ok?3:0;m.due=Date.now()+(ok?3:0)*864e5;});
+      save(); },
+    onNext:()=>{ planAt++; nextPlacement(); }});
+}
+
+/* ---------------- progress & board ---------------- */
+function drawProgress(){
+  const {st}=awards(), all=Object.values(P.solved);
+  const acc=all.length?Math.round(100*P.firstTry/all.length):0;
+  $('figs').innerHTML=[[st.n,'problems solved'],[acc+'%','right first time'],[P.bestRun,'longest run with no hint'],
+    [P.reviews,'reviews cleared'],[P.ach.length+'/'+ACH.length,'achievements']]
+    .map(([a,b])=>`<div><div class="n">${a}</div><div class="l">${b}</div></div>`).join('');
+  $('goals').innerHTML=[100,150,250,400].map(g=>`<button data-g="${g}" aria-pressed="${P.goal===g}">${g} points a day</button>`).join('');
+  $('goals').querySelectorAll('button').forEach(b=>b.onclick=()=>{P.goal=+b.dataset.g;save();head();drawProgress()});
+  $('mastery').innerHTML=DAYS.map((D,i)=>{const v=subjectScore(i);
+    return `<div><span>${D.name}</span><span class="b"><i style="width:${v}%"></i></span><span class="v">${v}%</span></div>`}).join('');
+  $('awards').innerHTML=ACH.map(a=>`<div class="aw ${P.ach.includes(a.id)?'got':''}"><div class="t">${a.t}</div><div class="d">${a.d}</div></div>`).join('');
+  const n=[0,1,2,3,4,5,6].reduce((s,i)=>s+dayStat(i).n,0);
+  $('weekNote').textContent=`Week ${WK.week} of ${WK.year}: ${n} of ${TOTAL} of this week's set done. A new set arrives every Monday, identical for everyone.`;
+}
+async function drawBoard(){
+  const b=$('board'); b.innerHTML='<tr><td colspan="5">Loading…</td></tr>';
+  let rows=await cloudBoard();
+  if(!rows){ rows=[{name:P.name||'You',xp:P.xp,level:levelOf(P.xp),solved:Object.values(P.solved).filter(r=>r.s>0).length}];
+    $('v-board').querySelector('.note').textContent='This board is showing only this device. Connect the app to a database and everyone who opens the link appears here.'; }
+  rows.sort((x,y)=>y.xp-x.xp);
+  b.innerHTML=rows.map((r,i)=>`<tr class="${r.name===P.name?'me':''}"><td>${i+1}</td><td>${r.name}</td><td>${r.xp}</td><td>${r.solved}</td><td>${r.level}</td></tr>`).join('');
+}
+
+/* ---------------- shell ---------------- */
+function view(v){
+  mode=v;
+  document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v?'true':'false'));
+  ['play','review','progress','board'].forEach(x=>$('v-'+x).hidden=(x!==v));
+  if(v==='play')drawPlay(); if(v==='review')drawReview();
+  if(v==='progress')drawProgress(); if(v==='board')drawBoard();
+  ghost();
+}
+let saveT=null;
+async function save(){
+  P.updated=Date.now();
+  local.set('prisma:profile',P);
+  clearTimeout(saveT);
+  saveT=setTimeout(()=>{ if(P.name&&cloudOn())cloudPut({name:P.name,xp:P.xp,level:levelOf(P.xp),
+    solved:Object.values(P.solved).filter(r=>r.s>0).length,profile:P,updated:new Date().toISOString()}); },900);
+}
+let gi=-1;
+function ghost(){ const g=document.querySelectorAll('.ghost'); if(!g.length)return;
+  if(g[gi])g[gi].classList.remove('on'); gi=(gi+1)%g.length; g[gi].classList.add('on'); }
+function boot0(){
+  $('ghosts').innerHTML=FIGURES.map(f=>`<div class="ghost">${f.svg}<div class="nm">${f.n}</div><div class="yr">${f.y}</div><div class="fx" data-t="${f.f.replace(/"/g,'&quot;')}"></div></div>`).join('');
+  document.querySelectorAll('.ghost .fx').forEach(e=>tex(e,e.dataset.t));
+  const line=QUOTES.map(([q,a])=>`${q} <em>— ${a}</em>`).join('<s>◆</s>');
+  $('run').innerHTML=line+'<s>◆</s>'+line;
+  $('todayLine').textContent='Today is '+DAYS[TODAY].name.toLowerCase()+'.';
+  ghost(); setInterval(ghost,16000);
+}
+function ask(again){
+  const veil=document.createElement('div'); veil.className='veil';
+  veil.innerHTML=`<div class="ask"><h3>${again?'Change your name':'What should the board call you?'}</h3>
+    <p>${again?'Your points move with you.':'It appears on the shared standings, and it is how your progress is found again on another device.'}</p>
+    <input id="nm" maxlength="20" value="${again?P.name:''}" placeholder="Name"><button class="btn" id="ok">Continue</button></div>`;
+  document.body.appendChild(veil);
+  const i=veil.querySelector('#nm'); setTimeout(()=>i.focus(),60);
+  const fin=async()=>{ const n=i.value.trim(); if(!n)return; P.name=n; veil.remove();
+    const c=await cloudGet(n); if(c&&c.profile&&(c.profile.updated||0)>(P.updated||0)){P={...P,...c.profile};}
+    save(); head(); view(mode); };
+  veil.querySelector('#ok').onclick=fin;
+  i.addEventListener('keydown',e=>{if(e.key==='Enter')fin()});
+}
+$('begin').onclick=()=>{ $('open').style.display='none'; $('app').classList.add('on'); view('play'); if(!P.name)ask(false); };
+$('place').onclick=()=>{ if(!P.name){ask(false)} startPlacement(); };
+$('mark').onclick=()=>{ $('app').classList.remove('on'); $('open').style.display='flex'; };
+$('rename').onclick=()=>ask(true);
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>view(b.dataset.v));
+
+(async function(){
+  boot0();
+  const l=await local.get('prisma:profile'); if(l)P={...P,...l};
+  if(P.name){ const c=await cloudGet(P.name); if(c&&c.profile&&(c.profile.updated||0)>(P.updated||0))P={...P,...c.profile}; }
+  idx=firstOpen(day); head();
+})();
+if('serviceWorker' in navigator) addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
