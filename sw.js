@@ -1,6 +1,6 @@
 /* Bump CACHE whenever you upload a new version, otherwise phones keep the old one. */
-const CACHE = 'prisma-v1';
-const ASSETS = ['./','./index.html','./config.js','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
+const CACHE = 'prisma-v2';
+const ASSETS = ['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -14,6 +14,10 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   if (url.origin.includes('supabase')) return;              // always live
+  if (url.pathname.endsWith('/config.js')) {                 // settings must never be served stale
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
   if (url.origin === location.origin) {                      // app files: cache first, refresh behind
     e.respondWith(caches.match(e.request).then(hit => {
       const net = fetch(e.request).then(res => {

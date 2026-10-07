@@ -236,6 +236,9 @@ tr.me td{color:var(--lilac)}
     <h2>Standings</h2>
     <table><thead><tr><th></th><th>Player</th><th>Points</th><th>Solved</th><th>Level</th></tr></thead><tbody id="board"></tbody></table>
     <p class="note">Everyone gets the same 105 problems each week, so the ranking is a fair comparison. Review problems are yours alone and score at 60%.</p>
+    <div class="note" id="diag"></div>
+    <div class="chips"><button id="selftest">Check the database connection</button></div>
+    <pre class="note" id="diagout" style="white-space:pre-wrap;display:none"></pre>
   </div>
 </section>
 </div>
@@ -1111,16 +1114,32 @@ const FIGURES=[
    Values come from config.js, which is the only file you need to edit. */
 const CLOUD=(window.PRISMA_CONFIG&&window.PRISMA_CONFIG.url)?window.PRISMA_CONFIG:{url:'',key:''};
 const cloudOn=()=>!!(CLOUD.url&&CLOUD.key);
-const H=()=>({apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json'});
-async function cloudPut(row){ if(!cloudOn())return false;
-  try{const r=await fetch(CLOUD.url+'/rest/v1/players?on_conflict=name',
-    {method:'POST',headers:{...H(),Prefer:'resolution=merge-duplicates'},body:JSON.stringify(row)});return r.ok}catch(e){return false} }
-async function cloudGet(name){ if(!cloudOn())return null;
-  try{const r=await fetch(CLOUD.url+'/rest/v1/players?select=*&name=eq.'+encodeURIComponent(name),{headers:H()});
-    const j=await r.json();return Array.isArray(j)&&j[0]?j[0]:null}catch(e){return null} }
-async function cloudBoard(){ if(!cloudOn())return null;
-  try{const r=await fetch(CLOUD.url+'/rest/v1/players?select=name,xp,level,solved&order=xp.desc&limit=50',{headers:H()});
-    const j=await r.json();return Array.isArray(j)?j:null}catch(e){return null} }
+const H=()=>{const h={apikey:CLOUD.key,'Content-Type':'application/json'};
+  /* legacy anon keys are JWTs and may ride on Authorization; the newer sb_publishable_ keys are not
+     JWTs and are rejected if sent there, so they travel on apikey alone. */
+  if(/^eyJ/.test(CLOUD.key))h.Authorization='Bearer '+CLOUD.key;
+  return h;};
+let LAST={what:'nothing yet',status:0,msg:'',rows:null};
+async function call(what,path,opts){
+  if(!cloudOn()){ LAST={what,status:0,msg:'config.js has no url or key',rows:null}; return null; }
+  try{
+    const r=await fetch(CLOUD.url+path,{...opts,headers:{...H(),...((opts||{}).headers||{})}});
+    const txt=await r.text(); let j=null; try{j=JSON.parse(txt)}catch(e){}
+    const err=j&&!Array.isArray(j)?(j.message||j.msg||j.error_description||j.error||j.hint):'';
+    LAST={what,status:r.status,msg:r.ok?'':(err||txt.slice(0,180)||'no detail'),rows:Array.isArray(j)?j.length:null};
+    return r.ok?(j===null?[]:j):null;
+  }catch(e){ LAST={what,status:0,msg:'network failure — '+e.message,rows:null}; return null; }
+}
+async function cloudPut(row){
+  const j=await call('save','/rest/v1/players?on_conflict=name',
+    {method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify(row)});
+  return j!==null; }
+async function cloudGet(name){
+  const j=await call('load','/rest/v1/players?select=*&name=eq.'+encodeURIComponent(name));
+  return Array.isArray(j)&&j[0]?j[0]:null; }
+async function cloudBoard(){
+  const j=await call('board','/rest/v1/players?select=name,xp,level,solved&order=xp.desc&limit=50');
+  return Array.isArray(j)?j:null; }
 const local={
   async get(k){ if(window.storage){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null}catch(e){return null}}
     try{return JSON.parse(localStorage.getItem(k))}catch(e){return null} },
@@ -1369,12 +1388,55 @@ function drawProgress(){
   $('weekNote').textContent=`Week ${WK.week} of ${WK.year}: ${n} of ${TOTAL} of this week's set done. A new set arrives every Monday, identical for everyone.`;
 }
 async function drawBoard(){
-  const b=$('board'); b.innerHTML='<tr><td colspan="5">Loading…</td></tr>';
+  const b=$('board'),d=$('diag');
+  b.innerHTML='<tr><td colspan="5">Loading…</td></tr>'; d.textContent='';
   let rows=await cloudBoard();
-  if(!rows){ rows=[{name:P.name||'You',xp:P.xp,level:levelOf(P.xp),solved:Object.values(P.solved).filter(r=>r.s>0).length}];
-    $('v-board').querySelector('.note').textContent='This board is showing only this device. Connect the app to a database and everyone who opens the link appears here.'; }
+  if(!rows){
+    rows=[{name:P.name||'You',xp:P.xp,level:levelOf(P.xp),solved:Object.values(P.solved).filter(r=>r.s>0).length}];
+    d.textContent=cloudOn()
+      ? `This board could not reach the database (${LAST.status||'no response'}: ${LAST.msg}). It is showing this device only.`
+      : 'No database is configured, so this board shows this device only. Fill in config.js to put everyone on one board.';
+  } else if(!rows.length){
+    d.textContent='The database answered normally but holds no rows yet. Either nobody has finished a problem since it was connected, or the insert policy is rejecting writes — run the check below.';
+  }
   rows.sort((x,y)=>y.xp-x.xp);
   b.innerHTML=rows.map((r,i)=>`<tr class="${r.name===P.name?'me':''}"><td>${i+1}</td><td>${r.name}</td><td>${r.xp}</td><td>${r.solved}</td><td>${r.level}</td></tr>`).join('');
+}
+async function selfTest(){
+  const out=$('diagout'); out.style.display='block'; out.textContent='Running…';
+  const L=[];
+  const k=CLOUD.key||'', kind=/^eyJ/.test(k)?'legacy anon (JWT)':/^sb_publishable_/.test(k)?'publishable':
+        /^sb_secret_|service_role/.test(k)?'SECRET — do not use this one in a browser':k?'unrecognised':'missing';
+  L.push('config.js loaded : '+(window.PRISMA_CONFIG?'yes':'NO — the file did not load at all'));
+  L.push('url              : '+(CLOUD.url||'(empty)'));
+  L.push('url shape        : '+(/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(CLOUD.url)?'looks right':'SUSPECT — expected https://<ref>.supabase.co with no trailing path'));
+  L.push('key              : '+(k?k.slice(0,12)+'… ('+k.length+' chars)':'(empty)'));
+  L.push('key type         : '+kind);
+  if(!cloudOn()){ out.textContent=L.join('\n')+'\n\nVERDICT: config.js is not filled in, or the site is serving an older copy of it.'; return; }
+
+  await call('read','/rest/v1/players?select=name&limit=1');
+  const readStatus=LAST.status, readMsg=LAST.msg, readRows=LAST.rows;
+  L.push('read test        : HTTP '+readStatus+(readMsg?' — '+readMsg:' — ok, rows visible: '+readRows));
+
+  let writeStatus=0,writeMsg='';
+  if(readStatus===200){
+    await call('write','/rest/v1/players?on_conflict=name',{method:'POST',
+      headers:{Prefer:'resolution=merge-duplicates'},
+      body:JSON.stringify({name:'__connection_test__',xp:0,level:1,solved:0,updated:new Date().toISOString()})});
+    writeStatus=LAST.status; writeMsg=LAST.msg;
+    L.push('write test       : HTTP '+writeStatus+(writeMsg?' — '+writeMsg:' — ok'));
+    if(writeStatus>=200&&writeStatus<300)
+      await call('cleanup','/rest/v1/players?name=eq.__connection_test__',{method:'DELETE'});
+  }
+  let v;
+  if(readStatus===0) v='The browser could not reach Supabase at all. Check the url for a typo, and check that the project is not paused in the Supabase dashboard.';
+  else if(readStatus===401||readStatus===403) v='Supabase rejected the key. Either the key is wrong, or it is the right key but the row level security policies were never created — run supabase.sql in the SQL editor.';
+  else if(readStatus===404) v='The players table is not reachable. Either supabase.sql was run in a different project, or the public schema is not exposed to the Data API.';
+  else if(readStatus===200&&writeStatus>=400) v='Reading works but writing is blocked, so nobody is ever saved to the board. The insert and update policies are missing — run supabase.sql again and check it reports Success.';
+  else if(readStatus===200&&readRows===0) v='The connection is healthy and the table is empty. Solve one problem, then come back — your row should appear.';
+  else if(readStatus===200) v='Everything is working. If a friend is still missing, they are on an older copy of the site: have them delete the icon and open the link again.';
+  else v='Unexpected response. The read status was '+readStatus+'.';
+  out.textContent=L.join('\n')+'\n\nVERDICT: '+v;
 }
 
 /* ---------------- shell ---------------- */
@@ -1423,6 +1485,7 @@ $('place').onclick=()=>{ if(!P.name){ask(false)} startPlacement(); };
 $('mark').onclick=()=>{ $('app').classList.remove('on'); $('open').style.display='flex'; };
 $('rename').onclick=()=>ask(true);
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>view(b.dataset.v));
+$('selftest').onclick=selfTest;
 
 (async function(){
   boot0();
